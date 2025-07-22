@@ -21,7 +21,7 @@ average_resolution = round(df['Resolution Time (hrs)'].mean(), 2)
 slow_tickets = len(df[df['Resolution Time (hrs)'] > 48])
 
 # --- Team Productivity ---
-top_staff = df['Worked By'].value_counts().head(5)
+top_staff = df['Worked By'].value_counts().head(6)
 
 # --- Platform Analysis ---
 platform_tickets = df['Platform (Object) (Case)'].value_counts().head(5)
@@ -38,7 +38,7 @@ print(f"Unassigned Tickets: {unassigned_tickets}")
 print(f"Average Resolution Time: {average_resolution} hours")
 print(f"Tickets Resolved > 48 hrs: {slow_tickets}")
 
-print("\n=== 👥 TOP 5 STAFF BY TICKETS HANDLED ===")
+print("\n=== 👥 TICKETS HANDLED BY TEAM MEMBERS ===")
 print(top_staff.to_string())
 
 print("\n=== 🖥️ TOP 5 PLATFORMS BY TICKETS ===")
