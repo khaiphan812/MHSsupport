@@ -110,4 +110,3 @@ print(f"\n8. Total Case Quantity in the Last 10 Days ({start_date} to {latest_da
 print(f"\n6. Cases without Platform :\n{missing_platform_count}")
 
 print_table(peak_hours_df, "7. Peak Hour Distribution (Entered Queue)", show_index=False)
-
