@@ -1,5 +1,6 @@
 import pandas as pd
 import re
+from datetime import timedelta
 from tabulate import tabulate
 
 # --- Replace with your actual Excel file path ---
@@ -49,9 +50,27 @@ cases_by_priority_df.columns = ['Priority', 'Case Count']
 cases_by_priority_df.index += 1
 
 # 5. Top 10 days with most cases entered
-top_days_df = df['Entered Queue'].dt.date.value_counts().head(10).sort_index().reset_index()
+top_days_df = df['Entered Queue'].dt.date.value_counts().head(10).reset_index()
 top_days_df.columns = ['Date', 'Case Count']
 top_days_df.index += 1
+
+# Get the latest date in the dataset
+latest_date = df['Entered Queue'].max().date()
+
+# Define the 10-day window (inclusive of latest date)
+start_date = latest_date - timedelta(days=9)
+
+# Filter rows within the last 10 days
+recent_cases = df[df['Entered Queue'].dt.date.between(start_date, latest_date)]
+
+# 1. Total count
+last_10_days_count = recent_cases.shape[0]
+print(f"\n8. Total Case Quantity in the Last 10 Days ({start_date} to {latest_date}): {last_10_days_count}")
+
+last_10_days_df = recent_cases['Entered Queue'].dt.date.value_counts().sort_index(ascending=False).reset_index()
+last_10_days_df.columns = ['Date', 'Case Count']
+last_10_days_df.index += 1
+
 
 # 6. Count of missing platform values
 missing_platform_count = df['Platform'].isna().sum()
@@ -62,9 +81,9 @@ peak_hours_df.columns = ['Hour', 'Cases Entered']
 
 
 # Function to display tables with left-aligned text and right-aligned numbers
-def print_table(df, title):
+def print_table(df, title, show_index=True):
     print(f"\n{title}")
-    print(tabulate(df, headers='keys', showindex=True, tablefmt='pretty', stralign='left', numalign='right'))
+    print(tabulate(df, headers='keys', showindex=show_index, tablefmt='pretty', stralign='left', numalign='right'))
 
 
 # --- Print all results cleanly ---
@@ -74,7 +93,11 @@ print_table(cases_by_member_df, "3. Cases by Team Member")
 print_table(cases_by_priority_df, "4. Cases by Priority")
 print_table(top_days_df, "5. Top 10 Days with Most Cases Entered")
 
-print(f"\n6. Missing Platform Count:\n{missing_platform_count}")
+print_table(last_10_days_df, f"9. Daily Case Counts in the Last 10 Days ({start_date} to {latest_date})")
 
-print_table(peak_hours_df, "7. Peak Hour Distribution (Entered Queue)")
+print(f"\n8. Total Case Quantity in the Last 10 Days ({start_date} to {latest_date}): {last_10_days_count}")
+
+print(f"\n6. Cases without Platform :\n{missing_platform_count}")
+
+print_table(peak_hours_df, "7. Peak Hour Distribution (Entered Queue)", show_index=False)
 
