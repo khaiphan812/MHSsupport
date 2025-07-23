@@ -26,8 +26,6 @@ def normalize_title(title):
 
 df['Normalized Title'] = df['Title'].apply(normalize_title)
 
-# --- Replace blank priority with "Normal"
-df['Priority'] = df['Priority'].fillna('Normal')
 
 # 1. Platform counts
 platform_counts_df = df['Platform'].value_counts(dropna=False).reset_index()
@@ -48,6 +46,16 @@ cases_by_member_df.index += 1
 cases_by_priority_df = df['Priority'].value_counts().reset_index()
 cases_by_priority_df.columns = ['Priority', 'Case Count']
 cases_by_priority_df.index += 1
+
+# --- Get top issues for Normal priority (including blanks)
+normal_issues = df[df['Priority'] == 'Normal']
+normal_common_titles = normal_issues['Normalized Title'].value_counts().head(10).reset_index()
+normal_common_titles.columns = ['Normalized Title', 'Case Count']
+
+# --- Get top issues for High priority
+high_issues = df[df['Priority'] == 'High']
+high_common_titles = high_issues['Normalized Title'].value_counts().head(10).reset_index()
+high_common_titles.columns = ['Normalized Title', 'Case Count']
 
 # 5. Top 10 days with most cases entered
 top_days_df = df['Entered Queue'].dt.date.value_counts().head(10).reset_index()
@@ -91,6 +99,8 @@ print_table(platform_counts_df, "1. Platform Counts")
 print_table(common_case_titles_df, "2. Top Standardized Case Titles")
 print_table(cases_by_member_df, "3. Cases by Team Member")
 print_table(cases_by_priority_df, "4. Cases by Priority")
+print_table(normal_common_titles, "Top 10 Most Common Issues - Normal Priority (including empty)")
+print_table(high_common_titles, "Top 10 Most Common Issues - High Priority")
 print_table(top_days_df, "5. Top 10 Days with Most Cases Entered")
 
 print_table(last_10_days_df, f"9. Daily Case Counts in the Last 10 Days ({start_date} to {latest_date})")
