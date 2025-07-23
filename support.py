@@ -1,4 +1,5 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # --- Load Data ---
 file_path = "MHS Platform Support 2025 7-22-2025 12-57-27 PM.xlsx"
@@ -46,3 +47,27 @@ print(platform_tickets.to_string())
 
 print("\n=== 📅 RECENT TICKET VOLUME ===")
 print(ticket_volume.to_string())
+
+df = pd.read_excel("MHS Platform Support 2025 7-22-2025 12-57-27 PM.xlsx", sheet_name="L2 Platform Support 2025")
+
+# Count tickets by platform
+platform_counts = df['Platform (Object) (Case)'].value_counts()
+
+# Draw a bar chart
+platform_counts.plot(kind='bar', color='skyblue')
+plt.title("Tickets per Platform")
+plt.xlabel("Platform")
+plt.ylabel("Number of Tickets")
+plt.tight_layout()
+plt.show()
+
+df['Created On'] = pd.to_datetime(df['Created On (Object) (Case)'], errors='coerce')
+daily_counts = df['Created On'].dt.date.value_counts().sort_index()
+
+daily_counts.plot(kind='line', marker='o')
+plt.title("Tickets Created per Day")
+plt.xlabel("Date")
+plt.ylabel("Tickets")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
