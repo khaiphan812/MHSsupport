@@ -96,17 +96,13 @@ def print_table(df, title, show_index=True):
 
 # --- Print all results cleanly ---
 print_table(platform_counts_df, "1. Platform Counts")
-print_table(common_case_titles_df, "2. Top Standardized Case Titles")
-print_table(cases_by_member_df, "3. Cases by Team Member")
-print_table(cases_by_priority_df, "4. Cases by Priority")
-print_table(normal_common_titles, "Top 10 Most Common Issues - Normal Priority (including empty)")
-print_table(high_common_titles, "Top 10 Most Common Issues - High Priority")
-print_table(top_days_df, "5. Top 10 Days with Most Cases Entered")
-
+print(f"\n2. Cases without Platform :\n{missing_platform_count}")
+print_table(common_case_titles_df, "3. Most Common Case Titles")
+print_table(cases_by_member_df, "4. Cases by Team Member")
+print_table(cases_by_priority_df, "5. Cases by Priority")
+print_table(normal_common_titles, "6. Top 10 Most Common Issues - Normal Priority (including empty)")
+print_table(high_common_titles, "7. Top 10 Most Common Issues - High Priority")
+print_table(top_days_df, "8. Top 10 Days with Most Cases Entered")
 print_table(last_10_days_df, f"9. Daily Case Counts in the Last 10 Days ({start_date} to {latest_date})")
-
-print(f"\n8. Total Case Quantity in the Last 10 Days ({start_date} to {latest_date}): {last_10_days_count}")
-
-print(f"\n6. Cases without Platform :\n{missing_platform_count}")
-
-print_table(peak_hours_df, "7. Peak Hour Distribution (Entered Queue)", show_index=False)
+print(f"\n10. Total Case Quantity in the Last 10 Days ({start_date} to {latest_date}): {last_10_days_count}")
+print_table(peak_hours_df, "11. Peak Hour Distribution (Entered Queue)", show_index=False)
