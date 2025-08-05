@@ -10,6 +10,7 @@ df = pd.read_excel(file_path, sheet_name='L2 Platform Support 2025')
 # Process datetime
 df['Entered Queue'] = pd.to_datetime(df['Entered Queue'], errors='coerce')
 df['Created On'] = pd.to_datetime(df['Created On'], errors='coerce')
+df['Modified On'] = pd.to_datetime(df['Modified On'], errors='coerce')
 
 
 # Trim case title
@@ -84,11 +85,51 @@ missing_platform_count = df['Platform'].isna().sum()
 peak_hours_df = df['Entered Queue'].dt.hour.value_counts().sort_index().reset_index()
 peak_hours_df.columns = ['Hour', 'Cases Entered']
 
+# Filter for "Inactive" status
+inactive_cases = df[df['Status'] == 'Inactive'].copy()
+
+# Calculate resolution time
+inactive_cases['Resolution Time'] = inactive_cases['Modified On'] - inactive_cases['Entered Queue']
+inactive_cases['Resolution Hours'] = inactive_cases['Resolution Time'].dt.total_seconds() / 3600
+inactive_cases['Resolution Days'] = inactive_cases['Resolution Hours'] / 24
+
+
+# 11. Average resolved time for all cases
+avg_resolved_time = inactive_cases['Resolution Time'].mean()
+
+# 12. Average resolved time by platform
+avg_by_platform = inactive_cases.groupby('Platform')['Resolution Time'].mean().reset_index()
+
+# 13. Average resolved time by team member
+avg_by_member = inactive_cases.groupby('Worked By')['Resolution Time'].mean().reset_index()
+avg_by_member_sorted = avg_by_member.sort_values(by='Resolution Time')
+
+# 14. Average resolved time of Normal priority cases
+avg_normal_priority = inactive_cases[inactive_cases['Priority'] == 'Normal']['Resolution Time'].mean()
+
+# 15. Average resolved time of High priority cases
+avg_high_priority = inactive_cases[inactive_cases['Priority'] == 'High']['Resolution Time'].mean()
+
+# 16. Duration ranges
+under_12_hours = inactive_cases[inactive_cases['Resolution Hours'] <= 12].shape[0]
+between_12_24_hours = inactive_cases[(inactive_cases['Resolution Hours'] > 12) & (inactive_cases['Resolution Hours'] <= 24)].shape[0]
+between_1_3_days = inactive_cases[(inactive_cases['Resolution Days'] > 1) & (inactive_cases['Resolution Days'] <= 3)].shape[0]
+between_3_7_days = inactive_cases[(inactive_cases['Resolution Days'] > 3) & (inactive_cases['Resolution Days'] <= 7)].shape[0]
+over_7_days = inactive_cases[inactive_cases['Resolution Days'] > 7].shape[0]
+
 
 # Display tables
-def print_table(df, title, show_index=True):
+def print_table(df, title, show_index=True, colalign=None):
     print(f"\n{title}")
-    print(tabulate(df, headers='keys', showindex=show_index, tablefmt='pretty', stralign='left', numalign='right'))
+    print(tabulate(
+        df,
+        headers='keys',
+        showindex=show_index,
+        tablefmt='pretty',
+        stralign='left',
+        numalign='right',
+        colalign=colalign  # Custom alignment
+    ))
 
 
 # Print results
@@ -103,3 +144,14 @@ print_table(top_days_df, "8. Top 10 Days with Most Cases Entered")
 print_table(last_10_days_df, f"9. Daily Case Counts in the Last 10 Days ({start_date} to {latest_date})")
 print(f"\n10. Total Case Quantity in the Last 10 Days ({start_date} to {latest_date}): {last_10_days_count}")
 print_table(peak_hours_df, "11. Peak Hour Distribution (Entered Queue)", show_index=False)
+
+print("11. Average resolved time for all cases:", avg_resolved_time)
+print_table(avg_by_platform, "2. Average Resolved Time by Platform", show_index=False, colalign=("left", "right"))
+print_table(avg_by_member_sorted, "3. Average Resolved Time by Team Member", show_index=False, colalign=("left", "right"))
+print("\n14. Average resolved time of Normal priority cases:", avg_normal_priority)
+print("15. Average resolved time of High priority cases:", avg_high_priority)
+print("16. Number of cases resolved under 12 hours:", under_12_hours)
+print("17. Number of cases resolved between 12 - 24 hours:", between_12_24_hours)
+print("18. Number of cases resolved between 1 - 3 days:", between_1_3_days)
+print("19. Number of cases resolved between 3 - 7 days:", between_3_7_days)
+print("20. Number of cases resolved in over 7 days:", over_7_days)
