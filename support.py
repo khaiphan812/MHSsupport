@@ -89,26 +89,26 @@ peak_hours_df.columns = ['Hour', 'Cases Entered']
 inactive_cases = df[df['Status'] == 'Inactive'].copy()
 
 # Calculate resolution time
-inactive_cases['Resolution Time'] = inactive_cases['Modified On'] - inactive_cases['Entered Queue']
-inactive_cases['Resolution Hours'] = inactive_cases['Resolution Time'].dt.total_seconds() / 3600
+inactive_cases['Average Resolution Time'] = inactive_cases['Modified On'] - inactive_cases['Entered Queue']
+inactive_cases['Resolution Hours'] = inactive_cases['Average Resolution Time'].dt.total_seconds() / 3600
 inactive_cases['Resolution Days'] = inactive_cases['Resolution Hours'] / 24
 
 
 # 11. Average resolved time for all cases
-avg_resolved_time = inactive_cases['Resolution Time'].mean()
+avg_resolved_time = inactive_cases['Average Resolution Time'].mean()
 
 # 12. Average resolved time by platform
-avg_by_platform = inactive_cases.groupby('Platform')['Resolution Time'].mean().reset_index()
+avg_by_platform = inactive_cases.groupby('Platform')['Average Resolution Time'].mean().reset_index()
 
 # 13. Average resolved time by team member
-avg_by_member = inactive_cases.groupby('Worked By')['Resolution Time'].mean().reset_index()
-avg_by_member_sorted = avg_by_member.sort_values(by='Resolution Time')
+avg_by_member = inactive_cases.groupby('Worked By')['Average Resolution Time'].mean().reset_index()
+avg_by_member_sorted = avg_by_member.sort_values(by='Average Resolution Time')
 
 # 14. Average resolved time of Normal priority cases
-avg_normal_priority = inactive_cases[inactive_cases['Priority'] == 'Normal']['Resolution Time'].mean()
+avg_normal_priority = inactive_cases[inactive_cases['Priority'] == 'Normal']['Average Resolution Time'].mean()
 
 # 15. Average resolved time of High priority cases
-avg_high_priority = inactive_cases[inactive_cases['Priority'] == 'High']['Resolution Time'].mean()
+avg_high_priority = inactive_cases[inactive_cases['Priority'] == 'High']['Average Resolution Time'].mean()
 
 # 16. Duration ranges
 under_12_hours = inactive_cases[inactive_cases['Resolution Hours'] <= 12].shape[0]
