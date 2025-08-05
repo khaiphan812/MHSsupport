@@ -99,6 +99,7 @@ avg_resolved_time = inactive_cases['Average Resolution Time'].mean()
 
 # 12. Average resolved time by platform
 avg_by_platform = inactive_cases.groupby('Platform')['Average Resolution Time'].mean().reset_index()
+avg_by_platform_sorted = avg_by_platform.sort_values(by='Average Resolution Time')
 
 # 13. Average resolved time by team member
 avg_by_member = inactive_cases.groupby('Worked By')['Average Resolution Time'].mean().reset_index()
@@ -146,7 +147,7 @@ print(f"\n10. Total Case Quantity in the Last 10 Days ({start_date} to {latest_d
 print_table(peak_hours_df, "11. Peak Hour Distribution (Entered Queue)", show_index=False)
 
 print("11. Average resolved time for all cases:", avg_resolved_time)
-print_table(avg_by_platform, "2. Average Resolved Time by Platform", show_index=False, colalign=("left", "right"))
+print_table(avg_by_platform_sorted, "2. Average Resolved Time by Platform", show_index=False, colalign=("left", "right"))
 print_table(avg_by_member_sorted, "3. Average Resolved Time by Team Member", show_index=False, colalign=("left", "right"))
 print("\n14. Average resolved time of Normal priority cases:", avg_normal_priority)
 print("15. Average resolved time of High priority cases:", avg_high_priority)
