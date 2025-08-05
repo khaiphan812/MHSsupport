@@ -52,11 +52,13 @@ cases_by_priority_df.index += 1
 normal_issues = df[df['Priority'] == 'Normal']
 normal_common_titles = normal_issues['Normalized Title'].value_counts().head(10).reset_index()
 normal_common_titles.columns = ['Normalized Title', 'Case Count']
+normal_common_titles.index += 1
 
 # 6. Top issues for High priority
 high_issues = df[df['Priority'] == 'High']
 high_common_titles = high_issues['Normalized Title'].value_counts().head(10).reset_index()
 high_common_titles.columns = ['Normalized Title', 'Case Count']
+high_common_titles.index += 1
 
 # 7. Top 10 days with most cases entered
 top_days_df = df['Entered Queue'].dt.date.value_counts().head(10).reset_index()
