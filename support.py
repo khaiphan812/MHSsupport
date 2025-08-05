@@ -3,7 +3,7 @@ import re
 from datetime import timedelta
 from tabulate import tabulate
 
-file_path = "L2 Platform Support 2025 8-5-2025 10-42-33 AM.xlsx"
+file_path = "L2 Platform Support 2025 8-5-2025 12-11-14 PM.xlsx"
 
 df = pd.read_excel(file_path, sheet_name='L2 Platform Support 2025')
 
@@ -11,6 +11,7 @@ df = pd.read_excel(file_path, sheet_name='L2 Platform Support 2025')
 df['Entered Queue'] = pd.to_datetime(df['Entered Queue'], errors='coerce')
 df['Created On'] = pd.to_datetime(df['Created On'], errors='coerce')
 df['Modified On'] = pd.to_datetime(df['Modified On'], errors='coerce')
+df['Resolution Date'] = pd.to_datetime(df['Resolution Date'], errors='coerce')
 
 
 # Trim case title
@@ -86,7 +87,7 @@ peak_hours_df.columns = ['Hour', 'Cases Entered']
 inactive_cases = df[df['Status'] == 'Inactive'].copy()
 
 # Calculate resolution time
-inactive_cases['Average Resolution Time'] = inactive_cases['Modified On'] - inactive_cases['Entered Queue']
+inactive_cases['Average Resolution Time'] = inactive_cases['Resolution Date'] - inactive_cases['Entered Queue']
 inactive_cases['Resolution Hours'] = inactive_cases['Average Resolution Time'].dt.total_seconds() / 3600
 inactive_cases['Resolution Days'] = inactive_cases['Resolution Hours'] / 24
 
