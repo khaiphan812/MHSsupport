@@ -13,6 +13,11 @@ df['Created On'] = pd.to_datetime(df['Created On'], errors='coerce')
 df['Modified On'] = pd.to_datetime(df['Modified On'], errors='coerce')
 df['Resolution Date'] = pd.to_datetime(df['Resolution Date'], errors='coerce')
 
+# Convert PST to EST
+time_columns = ['Entered Queue', 'Created On', 'Modified On', 'Resolution Date']
+for col in time_columns:
+    df[col] = df[col] + pd.Timedelta(hours=3)
+
 
 # Trim case title
 def normalize_title(title):
@@ -44,12 +49,13 @@ cases_by_member_df.columns = ['Team Member', 'Case Count']
 cases_by_member_df.index += 1
 
 # 4. Case count by priority
+df['Priority'] = df['Priority'].fillna('Normal')
 cases_by_priority_df = df['Priority'].value_counts().reset_index()
 cases_by_priority_df.columns = ['Priority', 'Case Count']
 cases_by_priority_df.index += 1
 
 # 5. Top issues for Normal priority (including blanks)
-normal_issues = df[df['Priority'] == 'Normal']
+normal_issues = df[df['Priority'].isna() | (df['Priority'] == 'Normal')]
 normal_common_titles = normal_issues['Normalized Title'].value_counts().head(10).reset_index()
 normal_common_titles.columns = ['Normalized Title', 'Case Count']
 normal_common_titles.index += 1
@@ -106,7 +112,7 @@ avg_by_member = resolved_cases.groupby('Worked By')['Average Resolution Time'].m
 avg_by_member_sorted = avg_by_member.sort_values(by='Average Resolution Time')
 
 # 14. Average resolved time of Normal priority cases
-avg_normal_priority = resolved_cases[resolved_cases['Priority'] == 'Normal']['Average Resolution Time'].mean()
+avg_normal_priority = resolved_cases[resolved_cases['Priority'].isna() | (resolved_cases['Priority'] == 'Normal')]['Average Resolution Time'].mean()
 
 # 15. Average resolved time of High priority cases
 avg_high_priority = resolved_cases[resolved_cases['Priority'] == 'High']['Average Resolution Time'].mean()
