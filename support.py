@@ -117,7 +117,7 @@ avg_cases_by_dow = (
 )
 
 
-# 10. Peak hour distribution
+# 9. Peak hour distribution
 peak_hours_df = df['Entered Queue'].dt.hour.value_counts().sort_index().reset_index()
 peak_hours_df.columns = ['Hour', 'Cases Entered']
 
@@ -128,7 +128,6 @@ resolved_cases = df[df['Resolution Date'].notna()].copy()
 resolved_cases['Average Resolution Time'] = resolved_cases['Resolution Date'] - resolved_cases['Entered Queue']
 resolved_cases['Resolution Hours'] = resolved_cases['Average Resolution Time'].dt.total_seconds() / 3600
 resolved_cases['Resolution Days'] = resolved_cases['Resolution Hours'] / 24
-
 
 # 11. Average resolved time for all cases
 avg_resolved_time = resolved_cases['Average Resolution Time'].mean()
@@ -185,7 +184,7 @@ print_table(high_common_titles, "6. Top 10 Most Common Issues - High Priority")
 print_table(top_days_df, "7. Top 10 Days with Most Cases Entered Queue")
 print_table(avg_cases_by_dow, "8. Average Case Count by Day of Week", show_index=False)
 
-print_table(peak_hours_df, "10. Case Entered Queue by each hour (Vancouver time)", show_index=False)
+print_table(peak_hours_df, "9. Case Entered Queue by each hour (EST)", show_index=False)
 
 print("11. Average resolved time for all cases:", avg_resolved_time)
 print_table(avg_by_platform_sorted, "12. Average Resolved Time by Platform", show_index=False, colalign=("left", "right"))
