@@ -3,6 +3,7 @@ import re
 from datetime import timedelta
 from tabulate import tabulate
 
+
 file_path = "L2 Platform Support Data.xlsx"
 
 df = pd.read_excel(file_path, sheet_name='Sheet1')
@@ -129,6 +130,9 @@ resolved_cases['Average Resolution Time'] = resolved_cases['Resolution Date'] - 
 resolved_cases['Resolution Hours'] = resolved_cases['Average Resolution Time'].dt.total_seconds() / 3600
 resolved_cases['Resolution Days'] = resolved_cases['Resolution Hours'] / 24
 
+# Round resolution time columns to full seconds
+resolved_cases['Average Resolution Time'] = resolved_cases['Average Resolution Time'].dt.round('1s')
+
 # 11. Average resolved time for all cases
 avg_resolved_time = resolved_cases['Average Resolution Time'].mean()
 
@@ -168,6 +172,13 @@ def print_table(df, title, show_index=True, colalign=None):
     ))
 
 
+def format_timedelta(td):
+    if pd.isna(td):
+        return "N/A"
+    total_seconds = int(td.total_seconds())
+    return str(timedelta(seconds=total_seconds))
+
+
 # 1. Case count by platform
 print_table(platform_counts_df, "1. Case Count by Platform")
 # 1.1 Print separate table for each platform
@@ -186,13 +197,22 @@ print_table(avg_cases_by_dow, "8. Average Case Count by Day of Week", show_index
 
 print_table(peak_hours_df, "9. Case Entered Queue by each hour (EST)", show_index=False)
 
-print("11. Average resolved time for all cases:", avg_resolved_time)
-print_table(avg_by_platform_sorted, "12. Average Resolved Time by Platform", show_index=False, colalign=("left", "right"))
-print_table(avg_by_member_sorted, "13. Average Resolved Time by Team Member", show_index=False, colalign=("left", "right"))
-print("\n14. Average resolved time of Normal priority cases:", avg_normal_priority)
-print("15. Average resolved time of High priority cases:", avg_high_priority)
+print("11. Average resolved time for all cases:", format_timedelta(avg_resolved_time))
+print_table(avg_by_platform_sorted.assign(
+    **{'Average Resolution Time': avg_by_platform_sorted['Average Resolution Time'].apply(format_timedelta)}),
+    "12. Average Resolved Time by Platform", show_index=False, colalign=("left", "right"))
+print_table(avg_by_member_sorted.assign(
+    **{'Average Resolution Time': avg_by_member_sorted['Average Resolution Time'].apply(format_timedelta)}),
+    "13. Average Resolved Time by Team Member", show_index=False, colalign=("left", "right"))
+print("\n14. Average resolved time of Normal priority cases:", format_timedelta(avg_normal_priority))
+print("15. Average resolved time of High priority cases:", format_timedelta(avg_high_priority))
 print("16. Number of cases resolved under 12 hours:", under_12_hours)
 print("17. Number of cases resolved between 12 - 24 hours:", between_12_24_hours)
 print("18. Number of cases resolved between 1 - 3 days:", between_1_3_days)
 print("19. Number of cases resolved between 3 - 7 days:", between_3_7_days)
 print("20. Number of cases resolved in over 7 days:", over_7_days)
+
+
+
+
+
