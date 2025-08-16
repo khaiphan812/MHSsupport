@@ -100,12 +100,22 @@ start_date = latest_date - timedelta(days=9)
 # Filter rows within the last 10 days
 recent_cases = df[df['Entered Queue'].dt.date.between(start_date, latest_date)]
 
-# 8. Total count
-last_10_days_count = recent_cases.shape[0]
+# 8. Average cases per week day
+df['Day of Week'] = df['Entered Queue'].dt.day_name()
 
-last_10_days_df = recent_cases['Entered Queue'].dt.date.value_counts().sort_index(ascending=False).reset_index()
-last_10_days_df.columns = ['Date', 'Case Count']
-last_10_days_df.index += 1
+# Count cases per date and day of week
+cases_per_day = df.groupby([df['Entered Queue'].dt.date, 'Day of Week']).size().reset_index(name='Case Count')
+
+# Average case count by day of week, rounded to nearest whole number
+avg_cases_by_dow = (
+    cases_per_day.groupby('Day of Week')['Case Count']
+    .mean()
+    .round(0)
+    .astype(int)  # convert to integer
+    .reindex(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
+    .reset_index()
+)
+
 
 # 10. Peak hour distribution
 peak_hours_df = df['Entered Queue'].dt.hour.value_counts().sort_index().reset_index()
@@ -173,8 +183,8 @@ print_table(cases_by_priority_df, "4. Case Count by Priority")
 print_table(normal_common_titles, "5. Top 10 Most Common Issues - Normal Priority")
 print_table(high_common_titles, "6. Top 10 Most Common Issues - High Priority")
 print_table(top_days_df, "7. Top 10 Days with Most Cases Entered Queue")
-print_table(last_10_days_df, f"8. Daily Case Count in the Last 10 Days ({start_date} to {latest_date})")
-print(f"\n9. Total Case Count in the Last 10 Days ({start_date} to {latest_date}): {last_10_days_count}")
+print_table(avg_cases_by_dow, "8. Average Case Count by Day of Week", show_index=False)
+
 print_table(peak_hours_df, "10. Case Entered Queue by each hour (Vancouver time)", show_index=False)
 
 print("11. Average resolved time for all cases:", avg_resolved_time)
