@@ -3,18 +3,16 @@ import re
 from datetime import timedelta
 from tabulate import tabulate
 
-file_path = "L2 Platform Support 2025 8-5-2025 12-11-14 PM.xlsx"
+file_path = "L2 Platform Support Data.xlsx"
 
-df = pd.read_excel(file_path, sheet_name='L2 Platform Support 2025')
+df = pd.read_excel(file_path, sheet_name='Sheet1')
 
 # Process datetime
 df['Entered Queue'] = pd.to_datetime(df['Entered Queue'], errors='coerce')
-df['Created On'] = pd.to_datetime(df['Created On'], errors='coerce')
-df['Modified On'] = pd.to_datetime(df['Modified On'], errors='coerce')
 df['Resolution Date'] = pd.to_datetime(df['Resolution Date'], errors='coerce')
 
 # Convert PST to EST
-time_columns = ['Entered Queue', 'Created On', 'Modified On', 'Resolution Date']
+time_columns = ['Entered Queue', 'Resolution Date']
 for col in time_columns:
     df[col] = df[col] + pd.Timedelta(hours=3)
 
@@ -37,6 +35,17 @@ df['Platform'] = df['Platform'].fillna('Other (Test cases/Undefined)')
 platform_counts_df = df['Platform'].value_counts(dropna=False).reset_index()
 platform_counts_df.columns = ['Platform', 'Case Count']
 platform_counts_df.index += 1
+
+# 2. Top 5 most common subjects per platform
+platform_subject_counts = df.groupby(['Platform', 'Subject']).size().reset_index(name='Case Count')
+
+# Sort and take top 5 per platform
+top5_per_platform = (
+    platform_subject_counts
+    .sort_values(['Platform', 'Case Count'], ascending=[True, False])
+    .groupby('Platform')
+    .head(5)
+)
 
 # 2. Top 10 case types
 common_case_titles_df = df['Normalized Title'].value_counts().head(10).reset_index()
@@ -141,6 +150,9 @@ def print_table(df, title, show_index=True, colalign=None):
 
 # Print results
 print_table(platform_counts_df, "1. Case Count by Platform")
+# Print separate table for each platform
+for platform, table in top5_per_platform.groupby('Platform'):
+    print_table(table.reset_index(drop=True), f"Top 5 Subjects - {platform}", show_index=False)
 print_table(common_case_titles_df, "2. Most Common Case Titles")
 print_table(cases_by_member_df, "3. Cases Count by Team Member")
 print_table(cases_by_priority_df, "4. Case Count by Priority")
