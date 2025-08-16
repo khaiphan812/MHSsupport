@@ -36,7 +36,7 @@ platform_counts_df = df['Platform'].value_counts(dropna=False).reset_index()
 platform_counts_df.columns = ['Platform', 'Case Count']
 platform_counts_df.index += 1
 
-# 2. Top 5 most common subjects per platform
+# 1.1. Top 5 most common subjects per platform
 platform_subject_counts = df.groupby(['Platform', 'Subject']).size().reset_index(name='Case Count')
 
 # Sort and take top 5 per platform
@@ -45,6 +45,17 @@ top5_per_platform = (
     .sort_values(['Platform', 'Case Count'], ascending=[True, False])
     .groupby('Platform')
     .head(5)
+)
+
+# 1.2 Top 10 Customers per Platform
+platform_customer_counts = df.groupby(['Platform', 'Customer']).size().reset_index(name='Case Count')
+
+# Sort and take top 10 per platform
+top10_per_platform = (
+    platform_customer_counts
+    .sort_values(['Platform', 'Case Count'], ascending=[True, False])
+    .groupby('Platform')
+    .head(10)
 )
 
 # 2. Top 10 case types
@@ -148,11 +159,14 @@ def print_table(df, title, show_index=True, colalign=None):
     ))
 
 
-# Print results
+# 1. Case count by platform
 print_table(platform_counts_df, "1. Case Count by Platform")
-# Print separate table for each platform
+# 1.1 Print separate table for each platform
 for platform, table in top5_per_platform.groupby('Platform'):
     print_table(table.reset_index(drop=True), f"Top 5 Subjects - {platform}", show_index=False)
+# 1.2
+for platform, table in top10_per_platform.groupby('Platform'):
+    print_table(table.reset_index(drop=True), f"Top 10 Customers - {platform}", show_index=False)
 print_table(common_case_titles_df, "2. Most Common Case Titles")
 print_table(cases_by_member_df, "3. Cases Count by Team Member")
 print_table(cases_by_priority_df, "4. Case Count by Priority")
