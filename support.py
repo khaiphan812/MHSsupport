@@ -1,5 +1,6 @@
 import pandas as pd
 import re
+import math
 from datetime import timedelta
 from tabulate import tabulate
 
@@ -164,6 +165,19 @@ escalated_cases = df[df['Escalated'].astype(str).str.strip().str.lower() == 'yes
 subject_escalated_counts = escalated_cases['Subject'].value_counts().reset_index()
 subject_escalated_counts.columns = ['Subject', 'Escalated Case Count']
 
+# Average resolved time for escalated cases
+escalated_resolved_cases = resolved_cases[
+    resolved_cases['Escalated'].astype(str).str.strip().str.lower() == 'yes'
+].copy()
+
+if not escalated_resolved_cases.empty:
+    avg_escalated_time = escalated_resolved_cases['Average Resolution Time'].mean()
+    # Round up to seconds
+    total_seconds = math.ceil(avg_escalated_time.total_seconds())
+    avg_escalated_time = timedelta(seconds=total_seconds)
+else:
+    avg_escalated_time = None
+
 
 # Display tables
 def print_table(df, title, show_index=True, colalign=None):
@@ -219,4 +233,8 @@ print("18. Number of cases resolved between 1 - 3 days:", between_1_3_days)
 print("19. Number of cases resolved between 3 - 7 days:", between_3_7_days)
 print("20. Number of cases resolved in over 7 days:", over_7_days)
 print_table(subject_escalated_counts, "21: Escalated cases by Subject", show_index=False)
+if avg_escalated_time is not None:
+    print("22. Average resolved time of Escalated cases:", avg_escalated_time)
+else:
+    print("22. No resolved escalated cases found.")
 
