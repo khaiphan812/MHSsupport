@@ -38,7 +38,7 @@ platform_counts_df = df['Platform'].value_counts(dropna=False).reset_index()
 platform_counts_df.columns = ['Platform', 'Case Count']
 platform_counts_df.index += 1
 
-# 1.1. Top 5 most common subjects per platform
+# 2. Top 5 most common subjects per platform
 platform_subject_counts = df.groupby(['Platform', 'Subject']).size().reset_index(name='Case Count')
 
 # Sort and take top 5 per platform
@@ -49,7 +49,7 @@ top5_per_platform = (
     .head(5)
 )
 
-# 1.2 Top 10 Customers per Platform
+# 3. Top 10 Customers per Platform
 platform_customer_counts = df.groupby(['Platform', 'Customer']).size().reset_index(name='Case Count')
 
 # Sort and take top 10 per platform
@@ -60,17 +60,12 @@ top10_per_platform = (
     .head(10)
 )
 
-# 2. Top 10 case types
-common_case_titles_df = df['Normalized Title'].value_counts().head(10).reset_index()
-common_case_titles_df.columns = ['Case Title (Standardized)', 'Case Count']
-common_case_titles_df.index += 1
-
-# 3. Cases worked by team member
+# 4. Cases worked by team member
 cases_by_member_df = df['Worked By'].value_counts().reset_index()
 cases_by_member_df.columns = ['Team Member', 'Case Count']
 cases_by_member_df.index += 1
 
-# 4. Case count by priority
+# 5. Case count by priority
 df['Priority'] = df['Priority'].fillna('Normal')
 cases_by_priority_df = df['Priority'].value_counts().reset_index()
 cases_by_priority_df.columns = ['Priority', 'Case Count']
@@ -91,19 +86,7 @@ top5_subjects_per_priority = (
     .head(5)
 )
 
-# 5. Top issues for Normal priority (including blanks)
-normal_issues = df[df['Priority'].isna() | (df['Priority'] == 'Normal')]
-normal_common_titles = normal_issues['Normalized Title'].value_counts().head(10).reset_index()
-normal_common_titles.columns = ['Normalized Title', 'Case Count']
-normal_common_titles.index += 1
-
-# 6. Top issues for High priority
-high_issues = df[df['Priority'] == 'High']
-high_common_titles = high_issues['Normalized Title'].value_counts().head(10).reset_index()
-high_common_titles.columns = ['Normalized Title', 'Case Count']
-high_common_titles.index += 1
-
-# 7. Top 10 days with most cases entered
+# 9. Top 10 days with most cases entered queue
 top_days_df = df['Entered Queue'].dt.date.value_counts().head(10).reset_index()
 top_days_df.columns = ['Date', 'Case Count']
 top_days_df.index += 1
@@ -111,13 +94,7 @@ top_days_df.index += 1
 # Get the latest date in the dataset
 latest_date = df['Entered Queue'].max().date()
 
-# Get 10-day window (until latest date)
-start_date = latest_date - timedelta(days=9)
-
-# Filter rows within the last 10 days
-recent_cases = df[df['Entered Queue'].dt.date.between(start_date, latest_date)]
-
-# 8. Average cases per week day
+# 10. Average cases per week day
 df['Day of Week'] = df['Entered Queue'].dt.day_name()
 
 # Count cases per date and day of week
@@ -134,7 +111,7 @@ avg_cases_by_dow = (
 )
 
 
-# 9. Peak hour distribution
+# 11. Peak hour distribution
 peak_hours_df = df['Entered Queue'].dt.hour.value_counts().sort_index().reset_index()
 peak_hours_df.columns = ['Hour', 'Cases Entered']
 
@@ -149,31 +126,31 @@ resolved_cases['Resolution Days'] = resolved_cases['Resolution Hours'] / 24
 # Round resolution time columns to full seconds
 resolved_cases['Average Resolution Time'] = resolved_cases['Average Resolution Time'].dt.round('1s')
 
-# 11. Average resolved time for all cases
+# 12.1. Average resolved time for all cases
 avg_resolved_time = resolved_cases['Average Resolution Time'].mean()
 
-# 12. Average resolved time by platform
+# 12.2. Average resolved time of Normal priority cases
+avg_normal_priority = resolved_cases[resolved_cases['Priority'].isna() | (resolved_cases['Priority'] == 'Normal')]['Average Resolution Time'].mean()
+
+# 12.3. Average resolved time of High priority cases
+avg_high_priority = resolved_cases[resolved_cases['Priority'] == 'High']['Average Resolution Time'].mean()
+
+# 13. Average resolved time by platform
 avg_by_platform = resolved_cases.groupby('Platform')['Average Resolution Time'].mean().reset_index()
 avg_by_platform_sorted = avg_by_platform.sort_values(by='Average Resolution Time')
 
-# 13. Average resolved time by team member
+# 14. Average resolved time by team member
 avg_by_member = resolved_cases.groupby('Worked By')['Average Resolution Time'].mean().reset_index()
 avg_by_member_sorted = avg_by_member.sort_values(by='Average Resolution Time')
 
-# 14. Average resolved time of Normal priority cases
-avg_normal_priority = resolved_cases[resolved_cases['Priority'].isna() | (resolved_cases['Priority'] == 'Normal')]['Average Resolution Time'].mean()
-
-# 15. Average resolved time of High priority cases
-avg_high_priority = resolved_cases[resolved_cases['Priority'] == 'High']['Average Resolution Time'].mean()
-
-# 16. Duration ranges
+# 15. Duration ranges
 under_12_hours = resolved_cases[resolved_cases['Resolution Hours'] <= 12].shape[0]
 between_12_24_hours = resolved_cases[(resolved_cases['Resolution Hours'] > 12) & (resolved_cases['Resolution Hours'] <= 24)].shape[0]
 between_1_3_days = resolved_cases[(resolved_cases['Resolution Days'] > 1) & (resolved_cases['Resolution Days'] <= 3)].shape[0]
 between_3_7_days = resolved_cases[(resolved_cases['Resolution Days'] > 3) & (resolved_cases['Resolution Days'] <= 7)].shape[0]
 over_7_days = resolved_cases[resolved_cases['Resolution Days'] > 7].shape[0]
 
-# Filter only escalated cases (where Escalated == "Yes")
+# 16. Filter only escalated cases (where Escalated == "Yes")
 escalated_cases = df[df['Escalated'].astype(str).str.strip().str.lower() == 'yes']
 
 # Count number of escalated cases per Subject
@@ -217,46 +194,47 @@ def format_timedelta(td):
 
 # 1. Case count by platform
 print_table(platform_counts_df, "1. Case Count by Platform")
-# 1.1 Print separate table for each platform
+# 2. Top 5 Subjects per Platform
+print("2. Top 5 Subjects per Platform")
 for platform, table in top5_per_platform.groupby('Platform'):
     print_table(table.reset_index(drop=True), f"Top 5 Subjects - {platform}", show_index=False)
-# 1.2
+# 3. Top 10 Customers per Platform
+print("3. Top 10 Customers per Platform")
 for platform, table in top10_per_platform.groupby('Platform'):
     print_table(table.reset_index(drop=True), f"Top 10 Customers - {platform}", show_index=False)
-print_table(common_case_titles_df, "2. Most Common Case Titles")
-print_table(cases_by_member_df, "3. Cases Count by Team Member")
-print_table(cases_by_priority_df, "4. Case Count by Priority")
+
+print_table(cases_by_member_df, "4. Cases Count by Team Member")
+print_table(cases_by_priority_df, "5. Case Count by Priority")
+print("6-7-8. Top 5 Subjects per Priority")
 for priority, table in top5_subjects_per_priority.groupby('Priority'):
     print_table(
         table.reset_index(drop=True),
         f"Top 5 Subjects - Priority: {priority}",
         show_index=False
     )
-print_table(normal_common_titles, "5. Top 10 Most Common Issues - Normal Priority")
-print_table(high_common_titles, "6. Top 10 Most Common Issues - High Priority")
-print_table(top_days_df, "7. Top 10 Days with Most Cases Entered Queue")
-print_table(avg_cases_by_dow, "8. Average Case Count by Day of Week", show_index=False)
 
-print_table(peak_hours_df, "9. Case Entered Queue by each hour (EST)", show_index=False)
+print_table(top_days_df, "9. Top 10 Days with Most Cases Entered Queue")
+print_table(avg_cases_by_dow, "10. Average Case Count by Day of Week", show_index=False)
+print_table(peak_hours_df, "11. Case Entered Queue by each hour (EST)", show_index=False)
 
-print("11. Average resolved time for all cases:", format_timedelta(avg_resolved_time))
+print("12. Average resolved time for all cases:", format_timedelta(avg_resolved_time))
 print("12. Average resolved time of Normal priority cases:", format_timedelta(avg_normal_priority))
 print("13. Average resolved time of High priority cases:", format_timedelta(avg_high_priority))
 print_table(avg_by_platform_sorted.assign(
     **{'Average Resolution Time': avg_by_platform_sorted['Average Resolution Time'].apply(format_timedelta)}),
-    "14. Average Resolved Time by Platform", show_index=False, colalign=("left", "right"))
+    "13. Average Resolved Time by Platform", show_index=False, colalign=("left", "right"))
 print_table(avg_by_member_sorted.assign(
     **{'Average Resolution Time': avg_by_member_sorted['Average Resolution Time'].apply(format_timedelta)}),
-    "15. Average Resolved Time by Team Member", show_index=False, colalign=("left", "right"))
+    "14. Average Resolved Time by Team Member", show_index=False, colalign=("left", "right"))
 
-print("16. Number of cases resolved under 12 hours:", under_12_hours)
-print("17. Number of cases resolved between 12 - 24 hours:", between_12_24_hours)
-print("18. Number of cases resolved between 1 - 3 days:", between_1_3_days)
-print("19. Number of cases resolved between 3 - 7 days:", between_3_7_days)
-print("20. Number of cases resolved in over 7 days:", over_7_days)
-print_table(subject_escalated_counts, "21: Escalated cases by Subject", show_index=False)
+print("15. Number of cases resolved under 12 hours:", under_12_hours)
+print("16. Number of cases resolved between 12 - 24 hours:", between_12_24_hours)
+print("17. Number of cases resolved between 1 - 3 days:", between_1_3_days)
+print("18. Number of cases resolved between 3 - 7 days:", between_3_7_days)
+print("19. Number of cases resolved in over 7 days:", over_7_days)
+print_table(subject_escalated_counts, "20: Escalated cases by Subject", show_index=False)
 if avg_escalated_time is not None:
-    print("22. Average resolved time of Escalated cases:", avg_escalated_time)
+    print("21. Average resolved time of Escalated cases:", avg_escalated_time)
 else:
-    print("22. No resolved escalated cases found.")
+    print("21. No resolved escalated cases found.")
 
