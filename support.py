@@ -143,12 +143,35 @@ avg_by_platform_sorted = avg_by_platform.sort_values(by='Average Resolution Time
 avg_by_member = resolved_cases.groupby('Worked By')['Average Resolution Time'].mean().reset_index()
 avg_by_member_sorted = avg_by_member.sort_values(by='Average Resolution Time')
 
-# 15. Duration ranges
+# 15-19. Duration ranges
 under_12_hours = resolved_cases[resolved_cases['Resolution Hours'] <= 12].shape[0]
 between_12_24_hours = resolved_cases[(resolved_cases['Resolution Hours'] > 12) & (resolved_cases['Resolution Hours'] <= 24)].shape[0]
 between_1_3_days = resolved_cases[(resolved_cases['Resolution Days'] > 1) & (resolved_cases['Resolution Days'] <= 3)].shape[0]
 between_3_7_days = resolved_cases[(resolved_cases['Resolution Days'] > 3) & (resolved_cases['Resolution Days'] <= 7)].shape[0]
 over_7_days = resolved_cases[resolved_cases['Resolution Days'] > 7].shape[0]
+
+resolution_ranges = pd.DataFrame([
+    {"Resolution time": "Under 12 hours", "Case Count": under_12_hours},
+    {"Resolution time": "12 - 24 hours", "Case Count": between_12_24_hours},
+    {"Resolution time": "1 - 3 days", "Case Count": between_1_3_days},
+    {"Resolution time": "3 - 7 days", "Case Count": between_3_7_days},
+    {"Resolution time": "Over 7 days", "Case Count": over_7_days},
+])
+
+# Calculate percentages (1 decimal place)
+total_cases = resolution_ranges["Case Count"].sum()
+resolution_ranges["Percentage"] = (
+    resolution_ranges["Case Count"] / total_cases * 100
+).round(1).astype(str) + "%"
+
+# Add total row
+total_row = pd.DataFrame([{
+    "Resolution time": "Total",
+    "Case Count": total_cases,
+    "Percentage": "100%"
+}])
+
+resolution_summary = pd.concat([resolution_ranges, total_row], ignore_index=True)
 
 # 16. Filter only escalated cases (where Escalated == "Yes")
 escalated_cases = df[df['Escalated'].astype(str).str.strip().str.lower() == 'yes']
@@ -227,14 +250,16 @@ print_table(avg_by_member_sorted.assign(
     **{'Average Resolution Time': avg_by_member_sorted['Average Resolution Time'].apply(format_timedelta)}),
     "14. Average Resolved Time by Team Member", show_index=False, colalign=("left", "right"))
 
-print("15. Number of cases resolved under 12 hours:", under_12_hours)
-print("16. Number of cases resolved between 12 - 24 hours:", between_12_24_hours)
-print("17. Number of cases resolved between 1 - 3 days:", between_1_3_days)
-print("18. Number of cases resolved between 3 - 7 days:", between_3_7_days)
-print("19. Number of cases resolved in over 7 days:", over_7_days)
-print_table(subject_escalated_counts, "20: Escalated cases by Subject", show_index=False)
+print_table(
+    resolution_summary,
+    "15-19. Case Count by Resolution Time Range",
+    show_index=False,
+    colalign=("left", "right", "right")
+)
+
+print_table(subject_escalated_counts, "16: Escalated cases by Subject", show_index=False)
 if avg_escalated_time is not None:
-    print("21. Average resolved time of Escalated cases:", avg_escalated_time)
+    print("17. Average resolved time of Escalated cases:", avg_escalated_time)
 else:
-    print("21. No resolved escalated cases found.")
+    print(". No resolved escalated cases found.")
 
