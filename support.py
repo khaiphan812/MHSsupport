@@ -143,7 +143,7 @@ avg_by_platform_sorted = avg_by_platform.sort_values(by='Average Resolution Time
 avg_by_member = resolved_cases.groupby('Worked By')['Average Resolution Time'].mean().reset_index()
 avg_by_member_sorted = avg_by_member.sort_values(by='Average Resolution Time')
 
-# 15-19. Duration ranges
+# 15. Duration ranges
 under_12_hours = resolved_cases[resolved_cases['Resolution Hours'] <= 12].shape[0]
 between_12_24_hours = resolved_cases[(resolved_cases['Resolution Hours'] > 12) & (resolved_cases['Resolution Hours'] <= 24)].shape[0]
 between_1_3_days = resolved_cases[(resolved_cases['Resolution Days'] > 1) & (resolved_cases['Resolution Days'] <= 3)].shape[0]
@@ -252,7 +252,7 @@ print_table(avg_by_member_sorted.assign(
 
 print_table(
     resolution_summary,
-    "15-19. Case Count by Resolution Time Range",
+    "15 Case Count by Resolution Time Range",
     show_index=False,
     colalign=("left", "right", "right")
 )
