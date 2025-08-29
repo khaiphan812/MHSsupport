@@ -38,6 +38,21 @@ platform_counts_df = df['Platform'].value_counts(dropna=False).reset_index()
 platform_counts_df.columns = ['Platform', 'Case Count']
 platform_counts_df.index += 1
 
+total_platform_cases = platform_counts_df["Case Count"].sum()
+
+platform_counts_df["Percentage"] = (
+    platform_counts_df["Case Count"] / total_platform_cases * 100
+).round(1).astype(str) + "%"
+
+# Add total row
+platform_total_row = pd.DataFrame([{
+    "Platform": "Total",
+    "Case Count": total_platform_cases,
+    "Percentage": "100.0%"
+}])
+
+platform_summary = pd.concat([platform_counts_df, platform_total_row], ignore_index=True)
+
 # 2. Top 5 most common subjects per platform
 platform_subject_counts = df.groupby(['Platform', 'Subject']).size().reset_index(name='Case Count')
 
@@ -65,11 +80,38 @@ cases_by_member_df = df['Worked By'].value_counts().reset_index()
 cases_by_member_df.columns = ['Team Member', 'Case Count']
 cases_by_member_df.index += 1
 
+total_member_cases = cases_by_member_df["Case Count"].sum()
+cases_by_member_df["Percentage"] = (
+    cases_by_member_df["Case Count"] / total_member_cases * 100
+).round(1).astype(str) + "%"
+
+member_total_row = pd.DataFrame([{
+    "Team Member": "Total",
+    "Case Count": total_member_cases,
+    "Percentage": "100.0%"
+}])
+
+cases_by_member_summary = pd.concat([cases_by_member_df, member_total_row], ignore_index=True)
+
+
 # 5. Case count by priority
 df['Priority'] = df['Priority'].fillna('Normal')
 cases_by_priority_df = df['Priority'].value_counts().reset_index()
 cases_by_priority_df.columns = ['Priority', 'Case Count']
 cases_by_priority_df.index += 1
+
+total_priority_cases = cases_by_priority_df["Case Count"].sum()
+cases_by_priority_df["Percentage"] = (
+    cases_by_priority_df["Case Count"] / total_priority_cases * 100
+).round(1).astype(str) + "%"
+
+priority_total_row = pd.DataFrame([{
+    "Priority": "Total",
+    "Case Count": total_priority_cases,
+    "Percentage": "100.0%"
+}])
+
+cases_by_priority_summary = pd.concat([cases_by_priority_df, priority_total_row], ignore_index=True)
 
 # Group by Priority + Subject
 priority_subject_counts = (
@@ -110,10 +152,35 @@ avg_cases_by_dow = (
     .reset_index()
 )
 
+total_avg_cases = avg_cases_by_dow["Case Count"].sum()
+avg_cases_by_dow["Percentage"] = (
+    avg_cases_by_dow["Case Count"] / total_avg_cases * 100
+).round(1).astype(str) + "%"
+
+dow_total_row = pd.DataFrame([{
+    "Day of Week": "Total",
+    "Case Count": total_avg_cases,
+    "Percentage": "100.0%"
+}])
+
+avg_cases_summary = pd.concat([avg_cases_by_dow, dow_total_row], ignore_index=True)
 
 # 11. Peak hour distribution
 peak_hours_df = df['Entered Queue'].dt.hour.value_counts().sort_index().reset_index()
 peak_hours_df.columns = ['Hour', 'Cases Entered']
+
+total_hourly_cases = peak_hours_df["Cases Entered"].sum()
+peak_hours_df["Percentage"] = (
+    peak_hours_df["Cases Entered"] / total_hourly_cases * 100
+).round(1).astype(str) + "%"
+
+hour_total_row = pd.DataFrame([{
+    "Hour": "Total",
+    "Cases Entered": total_hourly_cases,
+    "Percentage": "100.0%"
+}])
+
+hourly_summary = pd.concat([peak_hours_df, hour_total_row], ignore_index=True)
 
 # Filter cases that have a resolution date
 resolved_cases = df[df['Resolution Date'].notna()].copy()
@@ -216,7 +283,12 @@ def format_timedelta(td):
 
 
 # 1. Case count by platform
-print_table(platform_counts_df, "1. Case Count by Platform")
+print_table(
+    platform_summary,
+    "1. Case Count by Platform",
+    show_index=False,
+    colalign=("left", "right", "right")
+)
 # 2. Top 5 Subjects per Platform
 print("2. Top 5 Subjects per Platform")
 for platform, table in top5_per_platform.groupby('Platform'):
@@ -226,8 +298,20 @@ print("3. Top 10 Customers per Platform")
 for platform, table in top10_per_platform.groupby('Platform'):
     print_table(table.reset_index(drop=True), f"Top 10 Customers - {platform}", show_index=False)
 
-print_table(cases_by_member_df, "4. Cases Count by Team Member")
-print_table(cases_by_priority_df, "5. Case Count by Priority")
+print_table(
+    cases_by_member_summary,
+    "4. Cases Count by Team Member",
+    show_index=False,
+    colalign=("left", "right", "right")
+)
+
+print_table(
+    cases_by_priority_summary,
+    "5. Case Count by Priority",
+    show_index=False,
+    colalign=("left", "right", "right")
+)
+
 print("6-7-8. Top 5 Subjects per Priority")
 for priority, table in top5_subjects_per_priority.groupby('Priority'):
     print_table(
@@ -237,8 +321,20 @@ for priority, table in top5_subjects_per_priority.groupby('Priority'):
     )
 
 print_table(top_days_df, "9. Top 10 Days with Most Cases Entered Queue")
-print_table(avg_cases_by_dow, "10. Average Case Count by Day of Week", show_index=False)
-print_table(peak_hours_df, "11. Case Entered Queue by each hour (EST)", show_index=False)
+
+print_table(
+    avg_cases_summary,
+    "10. Average Case Count by Day of Week",
+    show_index=False,
+    colalign=("left", "right", "right")
+)
+
+print_table(
+    hourly_summary,
+    "11. Case Entered Queue by each Hour (EST)",
+    show_index=False,
+    colalign=("left", "right", "right")
+)
 
 print("12. Average resolved time for all cases:", format_timedelta(avg_resolved_time))
 print("12. Average resolved time of Normal priority cases:", format_timedelta(avg_normal_priority))
