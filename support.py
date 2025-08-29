@@ -202,9 +202,29 @@ avg_normal_priority = resolved_cases[resolved_cases['Priority'].isna() | (resolv
 # 12.3. Average resolved time of High priority cases
 avg_high_priority = resolved_cases[resolved_cases['Priority'] == 'High']['Average Resolution Time'].mean()
 
+
+def format_timedelta(td):
+    if pd.isna(td):
+        return "N/A"
+    total_seconds = int(td.total_seconds())
+    return str(timedelta(seconds=total_seconds))
+
+
 # 13. Average resolved time by platform
 avg_by_platform = resolved_cases.groupby('Platform')['Average Resolution Time'].mean().reset_index()
 avg_by_platform_sorted = avg_by_platform.sort_values(by='Average Resolution Time')
+
+avg_by_platform_with_days = avg_by_platform_sorted.copy()
+
+# Add days column (1 decimal)
+avg_by_platform_with_days["Resolution Days"] = (
+    avg_by_platform_with_days["Average Resolution Time"].dt.total_seconds() / 86400
+).round(1)
+
+# Format the timedelta column into readable hh:mm:ss
+avg_by_platform_with_days["Average Resolution Time"] = (
+    avg_by_platform_with_days["Average Resolution Time"].apply(format_timedelta)
+)
 
 # 14. Average resolved time by team member
 avg_by_member = resolved_cases.groupby('Worked By')['Average Resolution Time'].mean().reset_index()
@@ -275,13 +295,6 @@ def print_table(df, title, show_index=True, colalign=None):
     ))
 
 
-def format_timedelta(td):
-    if pd.isna(td):
-        return "N/A"
-    total_seconds = int(td.total_seconds())
-    return str(timedelta(seconds=total_seconds))
-
-
 # 1. Case count by platform
 print_table(
     platform_summary,
@@ -336,12 +349,18 @@ print_table(
     colalign=("left", "right", "right")
 )
 
-print("12. Average resolved time for all cases:", format_timedelta(avg_resolved_time))
-print("12. Average resolved time of Normal priority cases:", format_timedelta(avg_normal_priority))
-print("13. Average resolved time of High priority cases:", format_timedelta(avg_high_priority))
-print_table(avg_by_platform_sorted.assign(
-    **{'Average Resolution Time': avg_by_platform_sorted['Average Resolution Time'].apply(format_timedelta)}),
-    "13. Average Resolved Time by Platform", show_index=False, colalign=("left", "right"))
+print("12. Average resolved time")
+print("All cases:", format_timedelta(avg_resolved_time))
+print("Normal priority cases:", format_timedelta(avg_normal_priority))
+print("High priority cases:", format_timedelta(avg_high_priority))
+
+print_table(
+    avg_by_platform_with_days,
+    "13. Average Resolved Time by Platform",
+    show_index=False,
+    colalign=("left", "right", "right")
+)
+
 print_table(avg_by_member_sorted.assign(
     **{'Average Resolution Time': avg_by_member_sorted['Average Resolution Time'].apply(format_timedelta)}),
     "14. Average Resolved Time by Team Member", show_index=False, colalign=("left", "right"))
