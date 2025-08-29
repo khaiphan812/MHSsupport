@@ -267,6 +267,19 @@ escalated_cases = df[df['Escalated'].astype(str).str.strip().str.lower() == 'yes
 subject_escalated_counts = escalated_cases['Subject'].value_counts().reset_index()
 subject_escalated_counts.columns = ['Subject', 'Escalated Case Count']
 
+total_escalated = subject_escalated_counts["Escalated Case Count"].sum()
+subject_escalated_counts["Percentage"] = (
+    subject_escalated_counts["Escalated Case Count"] / total_escalated * 100
+).round(1).astype(str) + "%"
+
+subject_total_row = pd.DataFrame([{
+    "Subject": "Total",
+    "Escalated Case Count": total_escalated,
+    "Percentage": "100.0%"
+}])
+
+subject_escalated_summary = pd.concat([subject_escalated_counts, subject_total_row], ignore_index=True)
+
 # 16.1. Escalated Subjects by Platform
 escalated_subject_platform_counts = (
     escalated_cases
@@ -376,23 +389,39 @@ print_table(avg_by_member_sorted.assign(
 
 print_table(
     resolution_summary,
-    "15 Case Count by Resolution Time Range",
+    "15. Case Count by Resolution Time Range",
     show_index=False,
     colalign=("left", "right", "right")
 )
 
-print_table(subject_escalated_counts, "16: Escalated cases by Subject", show_index=False)
-
-print("16.1 Escalated Cases by Platform and Subject")
-for platform, table in escalated_subject_platform_counts.groupby('Platform'):
-    print_table(table.reset_index(drop=True), f"Escalated Subjects - {platform}", show_index=False)
+print_table(subject_escalated_summary, "\n16.1: Escalated cases by Subject", show_index=False)
 
 if avg_escalated_time is not None:
-    print("17. Average resolved time of Escalated cases:", avg_escalated_time)
+    print("16.2. Average resolved time of Escalated cases:", avg_escalated_time)
 else:
     print(". No resolved escalated cases found.")
 
-# 16.2. Average resolution days for escalated cases by each platform
+print("\n17.1. Escalated Subjects by Platform")
+for platform, table in escalated_subject_platform_counts.groupby('Platform'):
+    total_platform = table["Escalated Case Count"].sum()
+    table["Percentage"] = (table["Escalated Case Count"] / total_platform * 100).round(1).astype(str) + "%"
+
+    platform_total_row = pd.DataFrame([{
+        "Platform": platform,
+        "Subject": "Total",
+        "Escalated Case Count": total_platform,
+        "Percentage": "100.0%"
+    }])
+
+    table_with_total = pd.concat([table, platform_total_row], ignore_index=True)
+
+    print_table(
+        table_with_total.reset_index(drop=True),
+        f"Escalated Subjects - {platform}",
+        show_index=False
+    )
+
+# 17.2. Average resolution days for escalated cases by each platform
 if not escalated_resolved_cases.empty:
     escalated_avg_by_platform = (
         escalated_resolved_cases
@@ -402,7 +431,7 @@ if not escalated_resolved_cases.empty:
         .round(1)
     )
     escalated_avg_by_platform.columns = ['Platform', 'Avg Resolution Days']
-    print_table(escalated_avg_by_platform, "16.2 Average Resolution Days for Escalated Cases by Platform", show_index=False)
+    print_table(escalated_avg_by_platform, "17.2 Average Resolution Days for Escalated Cases by Platform", show_index=False)
 else:
-    print("16.2 No resolved escalated cases found.")
+    print("17.2 No resolved escalated cases found.")
 
