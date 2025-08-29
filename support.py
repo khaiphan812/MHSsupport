@@ -267,6 +267,15 @@ escalated_cases = df[df['Escalated'].astype(str).str.strip().str.lower() == 'yes
 subject_escalated_counts = escalated_cases['Subject'].value_counts().reset_index()
 subject_escalated_counts.columns = ['Subject', 'Escalated Case Count']
 
+# 16.1. Escalated Subjects by Platform
+escalated_subject_platform_counts = (
+    escalated_cases
+    .groupby(['Platform', 'Subject'])
+    .size()
+    .reset_index(name='Escalated Case Count')
+    .sort_values(['Platform', 'Escalated Case Count'], ascending=[True, False])
+)
+
 # Average resolved time for escalated cases
 escalated_resolved_cases = resolved_cases[
     resolved_cases['Escalated'].astype(str).str.strip().str.lower() == 'yes'
@@ -373,8 +382,27 @@ print_table(
 )
 
 print_table(subject_escalated_counts, "16: Escalated cases by Subject", show_index=False)
+
+print("16.1 Escalated Cases by Platform and Subject")
+for platform, table in escalated_subject_platform_counts.groupby('Platform'):
+    print_table(table.reset_index(drop=True), f"Escalated Subjects - {platform}", show_index=False)
+
 if avg_escalated_time is not None:
     print("17. Average resolved time of Escalated cases:", avg_escalated_time)
 else:
     print(". No resolved escalated cases found.")
+
+# 16.2. Average resolution days for escalated cases by each platform
+if not escalated_resolved_cases.empty:
+    escalated_avg_by_platform = (
+        escalated_resolved_cases
+        .groupby('Platform')['Resolution Days']
+        .mean()
+        .reset_index()
+        .round(1)
+    )
+    escalated_avg_by_platform.columns = ['Platform', 'Avg Resolution Days']
+    print_table(escalated_avg_by_platform, "16.2 Average Resolution Days for Escalated Cases by Platform", show_index=False)
+else:
+    print("16.2 No resolved escalated cases found.")
 
