@@ -263,6 +263,13 @@ resolution_summary = pd.concat([resolution_ranges, total_row], ignore_index=True
 # 16. Filter only escalated cases (where Escalated == "Yes")
 escalated_cases = df[df['Escalated'].astype(str).str.strip().str.lower() == 'yes']
 
+# Total escalated cases
+total_escalated_cases = escalated_cases.shape[0]
+
+# Escalated cases with a non-empty subject
+escalated_with_subject = escalated_cases[escalated_cases['Subject'].notna() & (escalated_cases['Subject'].astype(str).str.strip() != "")]
+escalated_with_subject_count = escalated_with_subject.shape[0]
+
 # Count number of escalated cases per Subject
 subject_escalated_counts = escalated_cases['Subject'].value_counts().reset_index()
 subject_escalated_counts.columns = ['Subject', 'Escalated Case Count']
@@ -394,7 +401,11 @@ print_table(
     colalign=("left", "right", "right")
 )
 
-print_table(subject_escalated_summary, "\n16.1: Escalated cases by Subject", show_index=False)
+print(f"\nESCALATED CASES:")
+print(f"Total escalated cases: {total_escalated_cases}")
+print(f"Escalated cases with a Subject value: {escalated_with_subject_count}")
+
+print_table(subject_escalated_summary, "16.1: Escalated cases by Subject", show_index=False)
 
 if avg_escalated_time is not None:
     print("16.2. Average resolved time of Escalated cases:", avg_escalated_time)
@@ -434,4 +445,5 @@ if not escalated_resolved_cases.empty:
     print_table(escalated_avg_by_platform, "17.2 Average Resolution Days for Escalated Cases by Platform", show_index=False)
 else:
     print("17.2 No resolved escalated cases found.")
+
 
