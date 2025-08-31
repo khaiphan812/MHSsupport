@@ -93,6 +93,13 @@ member_total_row = pd.DataFrame([{
 
 cases_by_member_summary = pd.concat([cases_by_member_df, member_total_row], ignore_index=True)
 
+# 4.1. Platform and Case Count by Member
+member_platform_counts = (
+    df.groupby(['Worked By', 'Platform'])
+      .size()
+      .reset_index(name='Case Count')
+      .sort_values(['Worked By', 'Case Count'], ascending=[True, False])
+)
 
 # 5. Case count by priority
 df['Priority'] = df['Priority'].fillna('Normal')
@@ -346,6 +353,27 @@ print_table(
     show_index=False,
     colalign=("left", "right", "right")
 )
+
+print("4.1. Platforms worked by each Team Member")
+for member, table in member_platform_counts.groupby('Worked By'):
+    total_cases = table["Case Count"].sum()
+    table["Percentage"] = (table["Case Count"] / total_cases * 100).round(1).astype(str) + "%"
+
+    member_total_row = pd.DataFrame([{
+        "Worked By": member,
+        "Platform": "Total",
+        "Case Count": total_cases,
+        "Percentage": "100.0%"
+    }])
+
+    table_with_total = pd.concat([table, member_total_row], ignore_index=True)
+
+    print_table(
+        table_with_total.reset_index(drop=True).drop(columns=["Worked By"]),
+        f"Platforms - {member}",
+        show_index=False,
+        colalign=("left", "right", "right")
+    )
 
 print_table(
     cases_by_priority_summary,
