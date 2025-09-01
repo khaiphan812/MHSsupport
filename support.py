@@ -31,7 +31,6 @@ def normalize_title(title):
 
 df['Normalized Title'] = df['Title'].apply(normalize_title)
 
-
 # 1. Case count by platform
 df['Platform'] = df['Platform'].fillna('Other')
 platform_counts_df = df['Platform'].value_counts(dropna=False).reset_index()
@@ -93,7 +92,7 @@ member_total_row = pd.DataFrame([{
 
 cases_by_member_summary = pd.concat([cases_by_member_df, member_total_row], ignore_index=True)
 
-# 4.1. Platform and Case Count by Member
+# 5. Platform and Case Count by Member
 member_platform_counts = (
     df.groupby(['Worked By', 'Platform'])
       .size()
@@ -101,7 +100,7 @@ member_platform_counts = (
       .sort_values(['Worked By', 'Case Count'], ascending=[True, False])
 )
 
-# 5. Case count by priority
+# 6. Case count by priority
 df['Priority'] = df['Priority'].fillna('Normal')
 cases_by_priority_df = df['Priority'].value_counts().reset_index()
 cases_by_priority_df.columns = ['Priority', 'Case Count']
@@ -334,27 +333,27 @@ def print_table(df, title, show_index=True, colalign=None):
 # 1. Case count by platform
 print_table(
     platform_summary,
-    "1. Case Count by Platform",
+    "1. CASE COUNT BY PLATFORM",
     show_index=False,
     colalign=("left", "right", "right")
 )
 # 2. Top 5 Subjects per Platform
-print("2. Top 5 Subjects per Platform")
+print("2. TOP 5 SUBJECTS BY PLATFORM")
 for platform, table in top5_per_platform.groupby('Platform'):
     print_table(table.reset_index(drop=True), f"Top 5 Subjects - {platform}", show_index=False)
 # 3. Top 10 Customers per Platform
-print("3. Top 10 Customers per Platform")
+print("3. TOP 10 CUSTOMERS BY PLATFORM")
 for platform, table in top10_per_platform.groupby('Platform'):
     print_table(table.reset_index(drop=True), f"Top 10 Customers - {platform}", show_index=False)
 
 print_table(
     cases_by_member_summary,
-    "4. Cases Count by Team Member",
+    "4. CASE COUNT BY TEAM MEMBER",
     show_index=False,
     colalign=("left", "right", "right")
 )
 
-print("4.1. Platforms worked by each Team Member")
+print("5. PLATFORMS WORKED BY TEAM MEMBER")
 for member, table in member_platform_counts.groupby('Worked By'):
     total_cases = table["Case Count"].sum()
     table["Percentage"] = (table["Case Count"] / total_cases * 100).round(1).astype(str) + "%"
@@ -377,12 +376,12 @@ for member, table in member_platform_counts.groupby('Worked By'):
 
 print_table(
     cases_by_priority_summary,
-    "5. Case Count by Priority",
+    "6. CASE COUNT BY PRIORITY",
     show_index=False,
     colalign=("left", "right", "right")
 )
 
-print("6-7-8. Top 5 Subjects per Priority")
+print("7. TOP 5 SUBJECTS BY PRIORITY")
 for priority, table in top5_subjects_per_priority.groupby('Priority'):
     print_table(
         table.reset_index(drop=True),
@@ -390,57 +389,55 @@ for priority, table in top5_subjects_per_priority.groupby('Priority'):
         show_index=False
     )
 
-print_table(top_days_df, "9. Top 10 Days with Most Cases Entered Queue")
+print_table(top_days_df, "8. TOP 10 BUSIEST DAYS OF 2025")
 
 print_table(
     avg_cases_summary,
-    "10. Average Case Count by Day of Week",
+    "9. AVERAGE CASE COUNT BY WEEKDAY",
     show_index=False,
     colalign=("left", "right", "right")
 )
 
 print_table(
     hourly_summary,
-    "11. Case Entered Queue by each Hour (EST)",
+    "10. CASE ENTERED QUEUE BY HOUR (EST)",
     show_index=False,
     colalign=("left", "right", "right")
 )
 
-print("12. Average resolved time")
-print("All cases:", format_timedelta(avg_resolved_time))
+print("11. AVERAGE RESOLUTION TIME BY PRIORITY")
+print("Overall average (all cases):", format_timedelta(avg_resolved_time))
 print("Normal priority cases:", format_timedelta(avg_normal_priority))
 print("High priority cases:", format_timedelta(avg_high_priority))
 
 print_table(
     avg_by_platform_with_days,
-    "13. Average Resolved Time by Platform",
+    "12. AVERAGE RESOLUTION TIME BY PLATFORM",
     show_index=False,
     colalign=("left", "right", "right")
 )
 
 print_table(avg_by_member_sorted.assign(
     **{'Average Resolution Time': avg_by_member_sorted['Average Resolution Time'].apply(format_timedelta)}),
-    "14. Average Resolved Time by Team Member", show_index=False, colalign=("left", "right"))
+    "13. AVERAGE RESOLUTION TIME BY TEAM MEMBER", show_index=False, colalign=("left", "right"))
 
 print_table(
     resolution_summary,
-    "15. Case Count by Resolution Time Range",
+    "14. CASE COUNT BY RESOLUTION TIME RANGE",
     show_index=False,
     colalign=("left", "right", "right")
 )
 
 print(f"\nESCALATED CASES:")
 print(f"Total escalated cases: {total_escalated_cases}")
-print(f"Escalated cases with a Subject value: {escalated_with_subject_count}")
-
-print_table(subject_escalated_summary, "16.1: Escalated cases by Subject", show_index=False)
+print(f"Escalated cases with a Subject: {escalated_with_subject_count}")
 
 if avg_escalated_time is not None:
-    print("16.2. Average resolved time of Escalated cases:", avg_escalated_time)
-else:
-    print(". No resolved escalated cases found.")
+    print("Average resolved time of Escalated cases:", avg_escalated_time)
 
-print("\n17.1. Escalated Subjects by Platform")
+print_table(subject_escalated_summary, "15. ESCALATED CASE COUNT BY SUBJECT", show_index=False)
+
+print("\n16. ESCALATED SUBJECTS BY PLATFORM")
 for platform, table in escalated_subject_platform_counts.groupby('Platform'):
     total_platform = table["Escalated Case Count"].sum()
     table["Percentage"] = (table["Escalated Case Count"] / total_platform * 100).round(1).astype(str) + "%"
@@ -460,18 +457,42 @@ for platform, table in escalated_subject_platform_counts.groupby('Platform'):
         show_index=False
     )
 
-# 17.2. Average resolution days for escalated cases by each platform
+# 17. AVERAGE RESOLUTION TIME FOR ESCALATED CASES BY PLATFORM
 if not escalated_resolved_cases.empty:
     escalated_avg_by_platform = (
         escalated_resolved_cases
-        .groupby('Platform')['Resolution Days']
+        .groupby('Platform')['Average Resolution Time']
         .mean()
         .reset_index()
-        .round(1)
     )
-    escalated_avg_by_platform.columns = ['Platform', 'Avg Resolution Days']
-    print_table(escalated_avg_by_platform, "17.2 Average Resolution Days for Escalated Cases by Platform", show_index=False)
-else:
-    print("17.2 No resolved escalated cases found.")
 
+    # Format as d hh:mm:ss
+    escalated_avg_by_platform["Avg Resolution (d hh:mm:ss)"] = (
+        escalated_avg_by_platform["Average Resolution Time"].apply(format_timedelta)
+    )
 
+    # Days (rounded 1 decimal)
+    escalated_avg_by_platform["Avg Resolution Days"] = (
+        escalated_avg_by_platform["Average Resolution Time"].dt.total_seconds() / 86400
+    ).round(1)
+
+    # Sort from shortest to longest
+    escalated_avg_by_platform = escalated_avg_by_platform.sort_values("Average Resolution Time")
+
+    # Drop raw timedelta (keep formatted)
+    escalated_avg_by_platform = escalated_avg_by_platform.drop(columns=["Average Resolution Time"])
+
+    # Reorder columns: hh:mm:ss before days
+    escalated_avg_by_platform = escalated_avg_by_platform[
+        ["Platform", "Avg Resolution (d hh:mm:ss)", "Avg Resolution Days"]
+    ].reset_index(drop=True)
+
+    # Make rank start from 1 instead of 0
+    escalated_avg_by_platform.index += 1
+
+    print_table(
+        escalated_avg_by_platform,
+        "17. AVERAGE RESOLUTION TIME FOR ESCALATED CASES BY PLATFORM",
+        show_index=True,
+        colalign=("left", "left", "right")
+    )
