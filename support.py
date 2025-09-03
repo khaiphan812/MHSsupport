@@ -53,9 +53,20 @@ platform_total_row = pd.DataFrame([{
 platform_summary = pd.concat([platform_counts_df, platform_total_row], ignore_index=True)
 
 # 2. Top 5 most common subjects per platform
-platform_subject_counts = df.groupby(['Platform', 'Subject']).size().reset_index(name='Case Count')
+platform_totals = df.groupby('Platform').size()
 
-# Sort and take top 5 per platform
+# Subject counts
+platform_subject_counts = (
+    df.groupby(['Platform', 'Subject']).size().reset_index(name='Case Count')
+)
+
+# % of the platform total
+platform_subject_counts['Percentage'] = (
+    platform_subject_counts['Case Count'] /
+    platform_subject_counts['Platform'].map(platform_totals) * 100
+).round(1).astype(str) + '%'
+
+# Top 5 per platform
 top5_per_platform = (
     platform_subject_counts
     .sort_values(['Platform', 'Case Count'], ascending=[True, False])
@@ -64,9 +75,17 @@ top5_per_platform = (
 )
 
 # 3. Top 10 Customers per Platform
-platform_customer_counts = df.groupby(['Platform', 'Customer']).size().reset_index(name='Case Count')
+platform_totals = df.groupby('Platform').size()
 
-# Sort and take top 10 per platform
+platform_customer_counts = (
+    df.groupby(['Platform', 'Customer']).size().reset_index(name='Case Count')
+)
+
+platform_customer_counts['Percentage'] = (
+    platform_customer_counts['Case Count'] /
+    platform_customer_counts['Platform'].map(platform_totals) * 100
+).round(1).astype(str) + '%'
+
 top10_per_platform = (
     platform_customer_counts
     .sort_values(['Platform', 'Case Count'], ascending=[True, False])
@@ -120,13 +139,17 @@ priority_total_row = pd.DataFrame([{
 cases_by_priority_summary = pd.concat([cases_by_priority_df, priority_total_row], ignore_index=True)
 
 # Group by Priority + Subject
+priority_totals = df.groupby('Priority').size()
+
 priority_subject_counts = (
-    df.groupby(['Priority', 'Subject'])
-      .size()
-      .reset_index(name='Case Count')
+    df.groupby(['Priority', 'Subject']).size().reset_index(name='Case Count')
 )
 
-# Sort and take top 5 per priority
+priority_subject_counts['Percentage'] = (
+    priority_subject_counts['Case Count'] /
+    priority_subject_counts['Priority'].map(priority_totals) * 100
+).round(1).astype(str) + '%'
+
 top5_subjects_per_priority = (
     priority_subject_counts
     .sort_values(['Priority', 'Case Count'], ascending=[True, False])
@@ -134,7 +157,7 @@ top5_subjects_per_priority = (
     .head(5)
 )
 
-# 9. Top 10 days with most cases entered queue
+# 8. Top 10 busiest days
 top_days_df = df['Entered Queue'].dt.date.value_counts().head(10).reset_index()
 top_days_df.columns = ['Date', 'Case Count']
 top_days_df.index += 1
@@ -142,7 +165,7 @@ top_days_df.index += 1
 # Get the latest date in the dataset
 latest_date = df['Entered Queue'].max().date()
 
-# 10. Average cases per week day
+# 9. Average cases per week day
 df['Day of Week'] = df['Entered Queue'].dt.day_name()
 
 # Count cases per date and day of week
@@ -171,7 +194,7 @@ dow_total_row = pd.DataFrame([{
 
 avg_cases_summary = pd.concat([avg_cases_by_dow, dow_total_row], ignore_index=True)
 
-# 11. Peak hour distribution
+# 10. Peak hour distribution
 peak_hours_df = df['Entered Queue'].dt.hour.value_counts().sort_index().reset_index()
 peak_hours_df.columns = ['Hour', 'Cases Entered']
 
@@ -199,13 +222,13 @@ resolved_cases['Resolution Days'] = resolved_cases['Resolution Hours'] / 24
 # Round resolution time columns to full seconds
 resolved_cases['Average Resolution Time'] = resolved_cases['Average Resolution Time'].dt.round('1s')
 
-# 12.1. Average resolved time for all cases
+# 11.1. Average resolved time for all cases
 avg_resolved_time = resolved_cases['Average Resolution Time'].mean()
 
-# 12.2. Average resolved time of Normal priority cases
+# 11.2. Average resolved time of Normal priority cases
 avg_normal_priority = resolved_cases[resolved_cases['Priority'].isna() | (resolved_cases['Priority'] == 'Normal')]['Average Resolution Time'].mean()
 
-# 12.3. Average resolved time of High priority cases
+# 11.3. Average resolved time of High priority cases
 avg_high_priority = resolved_cases[resolved_cases['Priority'] == 'High']['Average Resolution Time'].mean()
 
 
@@ -216,7 +239,7 @@ def format_timedelta(td):
     return str(timedelta(seconds=total_seconds))
 
 
-# 13. Average resolved time by platform
+# 12. Average resolved time by platform
 avg_by_platform = resolved_cases.groupby('Platform')['Average Resolution Time'].mean().reset_index()
 avg_by_platform_sorted = avg_by_platform.sort_values(by='Average Resolution Time')
 
@@ -232,11 +255,11 @@ avg_by_platform_with_days["Average Resolution Time"] = (
     avg_by_platform_with_days["Average Resolution Time"].apply(format_timedelta)
 )
 
-# 14. Average resolved time by team member
+# 13. Average resolved time by team member
 avg_by_member = resolved_cases.groupby('Worked By')['Average Resolution Time'].mean().reset_index()
 avg_by_member_sorted = avg_by_member.sort_values(by='Average Resolution Time')
 
-# 15. Duration ranges
+# 14. Duration ranges
 under_12_hours = resolved_cases[resolved_cases['Resolution Hours'] <= 12].shape[0]
 between_12_24_hours = resolved_cases[(resolved_cases['Resolution Hours'] > 12) & (resolved_cases['Resolution Hours'] <= 24)].shape[0]
 between_1_3_days = resolved_cases[(resolved_cases['Resolution Days'] > 1) & (resolved_cases['Resolution Days'] <= 3)].shape[0]
@@ -266,7 +289,7 @@ total_row = pd.DataFrame([{
 
 resolution_summary = pd.concat([resolution_ranges, total_row], ignore_index=True)
 
-# 16. Filter only escalated cases (where Escalated == "Yes")
+# 15. Filter only escalated cases (where Escalated == "Yes")
 escalated_cases = df[df['Escalated'].astype(str).str.strip().str.lower() == 'yes']
 
 # Total escalated cases
@@ -276,7 +299,7 @@ total_escalated_cases = escalated_cases.shape[0]
 escalated_with_subject = escalated_cases[escalated_cases['Subject'].notna() & (escalated_cases['Subject'].astype(str).str.strip() != "")]
 escalated_with_subject_count = escalated_with_subject.shape[0]
 
-# Count number of escalated cases per Subject
+# 16. Count number of escalated cases per Subject
 subject_escalated_counts = escalated_cases['Subject'].value_counts().reset_index()
 subject_escalated_counts.columns = ['Subject', 'Escalated Case Count']
 
@@ -329,6 +352,8 @@ def print_table(df, title, show_index=True, colalign=None):
         colalign=colalign  # Custom alignment
     ))
 
+# ------------------------------------- PRINTING ---------------------------------------------
+
 
 # 1. Case count by platform
 print_table(
@@ -340,12 +365,25 @@ print_table(
 # 2. Top 5 Subjects per Platform
 print("2. TOP 5 SUBJECTS BY PLATFORM")
 for platform, table in top5_per_platform.groupby('Platform'):
-    print_table(table.reset_index(drop=True), f"Top 5 Subjects - {platform}", show_index=False)
+    print_table(
+        table.reset_index(drop=True),
+        f"Top 5 Subjects - {platform}",
+        show_index=False,
+        colalign=("left", "left", "right", "right")
+    )
+
 # 3. Top 10 Customers per Platform
 print("3. TOP 10 CUSTOMERS BY PLATFORM")
 for platform, table in top10_per_platform.groupby('Platform'):
-    print_table(table.reset_index(drop=True), f"Top 10 Customers - {platform}", show_index=False)
+    print_table(
+        table.reset_index(drop=True),
+        f"Top 10 Customers - {platform}",
+        show_index=False,
+        colalign=("left", "left", "right", "right")
+    )
 
+
+# 4. Case Count by Team Member
 print_table(
     cases_by_member_summary,
     "4. CASE COUNT BY TEAM MEMBER",
@@ -386,7 +424,8 @@ for priority, table in top5_subjects_per_priority.groupby('Priority'):
     print_table(
         table.reset_index(drop=True),
         f"Top 5 Subjects - Priority: {priority}",
-        show_index=False
+        show_index=False,
+        colalign=("left", "left", "right", "right")
     )
 
 print_table(top_days_df, "8. TOP 10 BUSIEST DAYS OF 2025")
