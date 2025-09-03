@@ -77,15 +77,20 @@ top5_per_platform = (
 # 3. Top 10 Customers per Platform
 platform_totals = df.groupby('Platform').size()
 
+# Customer counts, excluding MHS
 platform_customer_counts = (
-    df.groupby(['Platform', 'Customer']).size().reset_index(name='Case Count')
+    df[df['Customer'] != "Multi-Health Systems Inc."]
+    .groupby(['Platform', 'Customer']).size()
+    .reset_index(name='Case Count')
 )
 
+# Add percentage relative to platform total
 platform_customer_counts['Percentage'] = (
     platform_customer_counts['Case Count'] /
     platform_customer_counts['Platform'].map(platform_totals) * 100
 ).round(1).astype(str) + '%'
 
+# Sort and take top 10 per platform
 top10_per_platform = (
     platform_customer_counts
     .sort_values(['Platform', 'Case Count'], ascending=[True, False])
