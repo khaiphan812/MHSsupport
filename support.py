@@ -5,7 +5,7 @@ from datetime import timedelta
 from tabulate import tabulate
 
 
-file_path = "L2 Platform Support Master Data_PST.xlsx"
+file_path = "L2 Platform Support Master Data.xlsx"
 
 df = pd.read_excel(file_path, sheet_name='Sheet1')
 
@@ -14,9 +14,9 @@ df['Entered Queue'] = pd.to_datetime(df['Entered Queue'], errors='coerce')
 df['Resolution Date'] = pd.to_datetime(df['Resolution Date'], errors='coerce')
 
 # Convert PST to EST
-time_columns = ['Entered Queue', 'Resolution Date']
-for col in time_columns:
-    df[col] = df[col] + pd.Timedelta(hours=3)
+# time_columns = ['Entered Queue', 'Resolution Date']
+# for col in time_columns:
+#     df[col] = df[col] + pd.Timedelta(hours=3)
 
 
 # Trim case title
@@ -79,7 +79,7 @@ platform_totals = df.groupby('Platform').size()
 
 # Customer counts, excluding MHS
 platform_customer_counts = (
-    df[~df['Customer'].isin(["Multi-Health Systems Inc.", "MHS Case Temp"])]
+    df[df['Customer'] != "Multi-Health Systems Inc."]
     .groupby(['Platform', 'Customer']).size()
     .reset_index(name='Case Count')
 )
@@ -370,23 +370,8 @@ print_table(
 # 2. Top 5 Subjects per Platform
 print("2. TOP 5 SUBJECTS BY PLATFORM")
 for platform, table in top5_per_platform.groupby('Platform'):
-    table = table.reset_index(drop=True).copy()
-
-    # Sum displayed percentages (strip the % then add)
-    pct_sum = pd.to_numeric(table['Percentage'].astype(str).str.rstrip('%'), errors='coerce').sum()
-    total_cases = table['Case Count'].sum()
-
-    total_row = pd.DataFrame([{
-        "Platform": platform,
-        "Subject": "Total",
-        "Case Count": total_cases,
-        "Percentage": f"{pct_sum:.1f}%"
-    }])
-
-    table_with_total = pd.concat([table, total_row], ignore_index=True)
-
     print_table(
-        table_with_total,
+        table.reset_index(drop=True),
         f"Top 5 Subjects - {platform}",
         show_index=False,
         colalign=("left", "left", "right", "right")
@@ -395,22 +380,8 @@ for platform, table in top5_per_platform.groupby('Platform'):
 # 3. Top 10 Customers per Platform
 print("3. TOP 10 CUSTOMERS BY PLATFORM")
 for platform, table in top10_per_platform.groupby('Platform'):
-    table = table.reset_index(drop=True).copy()
-
-    pct_sum = pd.to_numeric(table['Percentage'].astype(str).str.rstrip('%'), errors='coerce').sum()
-    total_cases = table['Case Count'].sum()
-
-    total_row = pd.DataFrame([{
-        "Platform": platform,
-        "Customer": "Total",
-        "Case Count": total_cases,
-        "Percentage": f"{pct_sum:.1f}%"
-    }])
-
-    table_with_total = pd.concat([table, total_row], ignore_index=True)
-
     print_table(
-        table_with_total,
+        table.reset_index(drop=True),
         f"Top 10 Customers - {platform}",
         show_index=False,
         colalign=("left", "left", "right", "right")
@@ -455,22 +426,8 @@ print_table(
 
 print("7. TOP 5 SUBJECTS BY PRIORITY")
 for priority, table in top5_subjects_per_priority.groupby('Priority'):
-    table = table.reset_index(drop=True).copy()
-
-    pct_sum = pd.to_numeric(table['Percentage'].astype(str).str.rstrip('%'), errors='coerce').sum()
-    total_cases = table['Case Count'].sum()
-
-    total_row = pd.DataFrame([{
-        "Priority": priority,
-        "Subject": "Total",
-        "Case Count": total_cases,
-        "Percentage": f"{pct_sum:.1f}%"
-    }])
-
-    table_with_total = pd.concat([table, total_row], ignore_index=True)
-
     print_table(
-        table_with_total,
+        table.reset_index(drop=True),
         f"Top 5 Subjects - Priority: {priority}",
         show_index=False,
         colalign=("left", "left", "right", "right")
@@ -579,7 +536,7 @@ if not escalated_resolved_cases.empty:
 
     print_table(
         escalated_avg_by_platform,
-        "\n17. AVERAGE RESOLUTION TIME FOR ESCALATED CASES BY PLATFORM",
+        "17. AVERAGE RESOLUTION TIME FOR ESCALATED CASES BY PLATFORM",
         show_index=True,
         colalign=("left", "left", "right")
     )
