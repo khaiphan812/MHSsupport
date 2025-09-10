@@ -79,7 +79,7 @@ platform_totals = df.groupby('Platform').size()
 
 # Customer counts, excluding MHS Inc, MHS Case Temp
 platform_customer_counts = (
-    df[df['Customer'] != "Multi-Health Systems Inc."]
+    df[~df['Customer'].isin(["Multi-Health Systems Inc.", "MHS Case Temp"])]
     .groupby(['Platform', 'Customer']).size()
     .reset_index(name='Case Count')
 )
