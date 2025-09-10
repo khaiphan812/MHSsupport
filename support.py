@@ -77,7 +77,7 @@ top5_per_platform = (
 # 3. Top 10 Customers per Platform
 platform_totals = df.groupby('Platform').size()
 
-# Customer counts, excluding MHS
+# Customer counts, excluding MHS Inc, MHS Case Temp
 platform_customer_counts = (
     df[df['Customer'] != "Multi-Health Systems Inc."]
     .groupby(['Platform', 'Customer']).size()
