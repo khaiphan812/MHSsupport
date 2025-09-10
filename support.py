@@ -14,9 +14,9 @@ df['Entered Queue'] = pd.to_datetime(df['Entered Queue'], errors='coerce')
 df['Resolution Date'] = pd.to_datetime(df['Resolution Date'], errors='coerce')
 
 # Convert PST to EST
-# time_columns = ['Entered Queue', 'Resolution Date']
-# for col in time_columns:
-#     df[col] = df[col] + pd.Timedelta(hours=3)
+time_columns = ['Entered Queue', 'Resolution Date']
+for col in time_columns:
+    df[col] = df[col] + pd.Timedelta(hours=3)
 
 
 # Trim case title
