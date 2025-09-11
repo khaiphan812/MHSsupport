@@ -52,6 +52,22 @@ platform_total_row = pd.DataFrame([{
 
 platform_summary = pd.concat([platform_counts_df, platform_total_row], ignore_index=True)
 
+# ---- Section 1.1: Case count by platform per month ----
+df['Year-Month'] = df['Entered Queue'].dt.to_period('M').astype(str)
+
+monthly_platform_counts = (
+    df.groupby(['Year-Month', 'Platform'])
+    .size()
+    .reset_index(name='Case Count')
+)
+
+# Add percentage relative to month total
+monthly_totals = monthly_platform_counts.groupby('Year-Month')['Case Count'].transform('sum')
+monthly_platform_counts['Percentage'] = (
+    monthly_platform_counts['Case Count'] / monthly_totals * 100
+).round(1).astype(str) + "%"
+
+
 # 2. Top 5 most common subjects per platform
 platform_totals = df.groupby('Platform').size()
 
@@ -367,6 +383,31 @@ print_table(
     show_index=False,
     colalign=("left", "right", "right")
 )
+
+print("\n1.1. CASE COUNT BY PLATFORM (MONTHLY)")
+for month, table in monthly_platform_counts.groupby('Year-Month'):
+    # Sort descending by Case Count (same as Section 1)
+    table = table.sort_values("Case Count", ascending=False).reset_index(drop=True).copy()
+
+    total_cases = table['Case Count'].sum()
+    pct_sum = pd.to_numeric(table['Percentage'].str.rstrip('%')).sum()
+
+    total_row = pd.DataFrame([{
+        "Year-Month": month,
+        "Platform": "Total",
+        "Case Count": total_cases,
+        "Percentage": f"{pct_sum:.1f}%"
+    }])
+
+    table_with_total = pd.concat([table, total_row], ignore_index=True)
+
+    print_table(
+        table_with_total.drop(columns=['Year-Month']),
+        f"Case Count by Platform - {month}",
+        show_index=False,
+        colalign=("left", "right", "right")
+    )
+
 # 2. Top 5 Subjects per Platform
 print("2. TOP 5 SUBJECTS BY PLATFORM")
 for platform, table in top5_per_platform.groupby('Platform'):
