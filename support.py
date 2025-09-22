@@ -3,6 +3,7 @@ import re
 import math
 from datetime import timedelta
 from tabulate import tabulate
+import numpy as np
 
 
 file_path = "L2 Platform Support Master Data_PST.xlsx"
@@ -17,6 +18,35 @@ df['Resolution Date'] = pd.to_datetime(df['Resolution Date'], errors='coerce')
 time_columns = ['Entered Queue', 'Resolution Date']
 for col in time_columns:
     df[col] = df[col] + pd.Timedelta(hours=3)
+
+
+def business_timedelta(start, end):
+    """
+    Calculate timedelta excluding weekends (Saturday, Sunday).
+    """
+    if pd.isna(start) or pd.isna(end):
+        return pd.NaT
+
+    # Convert to date for counting full business days
+    start_date = start.date()
+    end_date = end.date()
+
+    # Count weekdays between the two dates (excluding the end date)
+    weekdays = np.busday_count(start_date, end_date)
+
+    # If same day → direct subtraction
+    if start_date == end_date:
+        return end - start
+
+    # Otherwise: weekdays * 24h + leftover from first and last day
+    start_of_day = pd.Timestamp(start_date)
+    end_of_day = pd.Timestamp(end_date)
+
+    first_day_seconds = (start_of_day.replace(hour=23, minute=59, second=59) - start).total_seconds() + 1
+    last_day_seconds = (end - end_of_day).total_seconds()
+
+    total_secs = weekdays * 24 * 3600 + first_day_seconds + last_day_seconds
+    return timedelta(seconds=total_secs)
 
 
 # Trim case title
@@ -236,7 +266,8 @@ hourly_summary = pd.concat([peak_hours_df, hour_total_row], ignore_index=True)
 resolved_cases = df[df['Resolution Date'].notna()].copy()
 
 # Calculate resolution time
-resolved_cases['Average Resolution Time'] = resolved_cases['Resolution Date'] - resolved_cases['Entered Queue']
+resolved_cases['Average Resolution Time'] = resolved_cases.apply(
+    lambda row: business_timedelta(row['Entered Queue'], row['Resolution Date']), axis=1)
 resolved_cases['Resolution Hours'] = resolved_cases['Average Resolution Time'].dt.total_seconds() / 3600
 resolved_cases['Resolution Days'] = resolved_cases['Resolution Hours'] / 24
 
