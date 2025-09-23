@@ -6,7 +6,7 @@ from tabulate import tabulate
 import numpy as np
 
 
-file_path = "L2 Platform Support Master Data_PST.xlsx"
+file_path = "L2 Platform Support Master Data.xlsx"
 
 df = pd.read_excel(file_path, sheet_name='Sheet1')
 
@@ -15,9 +15,9 @@ df['Entered Queue'] = pd.to_datetime(df['Entered Queue'], errors='coerce')
 df['Resolution Date'] = pd.to_datetime(df['Resolution Date'], errors='coerce')
 
 # Convert PST to EST
-time_columns = ['Entered Queue', 'Resolution Date']
-for col in time_columns:
-    df[col] = df[col] + pd.Timedelta(hours=3)
+# time_columns = ['Entered Queue', 'Resolution Date']
+# for col in time_columns:
+#     df[col] = df[col] + pd.Timedelta(hours=3)
 
 
 def business_timedelta(start, end):
