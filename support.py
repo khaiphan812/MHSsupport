@@ -27,25 +27,39 @@ def business_timedelta(start, end):
     if pd.isna(start) or pd.isna(end):
         return pd.NaT
 
-    # Convert to date for counting full business days
     start_date = start.date()
     end_date = end.date()
 
-    # Count weekdays between the two dates (excluding the end date)
-    weekdays = np.busday_count(start_date, end_date)
-
-    # If same day → direct subtraction
+    # Same-day case
     if start_date == end_date:
-        return end - start
+        if start.weekday() < 5:  # Mon–Fri
+            return end - start
+        else:
+            return timedelta(0)
 
-    # Otherwise: weekdays * 24h + leftover from first and last day
-    start_of_day = pd.Timestamp(start_date)
-    end_of_day = pd.Timestamp(end_date)
+    # Count weekdays INCLUDING the end date if it's Mon–Fri
+    weekdays = np.busday_count(start_date, end_date)
+    if end.weekday() < 5:
+        weekdays += 1
 
-    first_day_seconds = (start_of_day.replace(hour=23, minute=59, second=59) - start).total_seconds() + 1
-    last_day_seconds = (end - end_of_day).total_seconds()
+    # Remove 2 since we’ll handle the first and last day separately
+    full_days = max(weekdays - 2, 0)
 
-    total_secs = weekdays * 24 * 3600 + first_day_seconds + last_day_seconds
+    # Partial first day
+    end_of_start_day = pd.Timestamp.combine(start_date, pd.Timestamp.max.time()).replace(
+        hour=23, minute=59, second=59
+    )
+    partial_first = (end_of_start_day - start).total_seconds()
+    if start.weekday() >= 5:  # weekend start
+        partial_first = 0
+
+    # Partial last day
+    start_of_end_day = pd.Timestamp.combine(end_date, pd.Timestamp.min.time())
+    partial_last = (end - start_of_end_day).total_seconds()
+    if end.weekday() >= 5:  # weekend end
+        partial_last = 0
+
+    total_secs = int(full_days * 86400 + partial_first + partial_last)  # cast to int
     return timedelta(seconds=total_secs)
 
 
@@ -267,9 +281,17 @@ resolved_cases = df[df['Resolution Date'].notna()].copy()
 
 # Calculate resolution time
 resolved_cases['Average Resolution Time'] = resolved_cases.apply(
-    lambda row: business_timedelta(row['Entered Queue'], row['Resolution Date']), axis=1)
-resolved_cases['Resolution Hours'] = resolved_cases['Average Resolution Time'].dt.total_seconds() / 3600
-resolved_cases['Resolution Days'] = resolved_cases['Resolution Hours'] / 24
+    lambda row: business_timedelta(row['Entered Queue'], row['Resolution Date']), axis=1
+)
+
+# Recompute Hours & Days based on new business timedelta
+resolved_cases['Resolution Hours'] = resolved_cases['Average Resolution Time'].apply(
+    lambda td: td.total_seconds() / 3600 if pd.notna(td) else None
+)
+resolved_cases['Resolution Days'] = resolved_cases['Average Resolution Time'].apply(
+    lambda td: td.total_seconds() / 86400 if pd.notna(td) else None
+)
+
 
 # Round resolution time columns to full seconds
 resolved_cases['Average Resolution Time'] = resolved_cases['Average Resolution Time'].dt.round('1s')
