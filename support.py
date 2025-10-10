@@ -6,7 +6,7 @@ from tabulate import tabulate
 import numpy as np
 
 
-file_path = "L2 Platform Support Master Data.xlsx"
+file_path = "L2 Platform Support Master Data_PST.xlsx"
 
 df = pd.read_excel(file_path, sheet_name='Sheet1')
 
@@ -635,3 +635,55 @@ if not escalated_resolved_cases.empty:
         show_index=True,
         colalign=("left", "left", "right")
     )
+
+
+# 19. CASE COUNT BY PLATFORM GROUP (Apr 1 - Sep 30, 2025)
+start_date = pd.Timestamp('2025-04-01')
+end_date = pd.Timestamp('2025-09-30')
+
+# Filter by date range
+df_apr_sep = df[(df['Entered Queue'] >= start_date) & (df['Entered Queue'] <= end_date)].copy()
+
+# Define overlapping group membership
+group_definitions = {
+    'Portals - MAC+ / LMS / GIFR': ['MAC+', 'LMS', 'GIFR'],
+    'Education - TAP': ['TAP'],
+    'Public Safety - GEARS / CORE PATHWAY': ['GEARS', 'CORE PATHWAY'],
+    'Gifted - MGI': ['MGI']
+}
+
+total_cases = df_apr_sep.shape[0]
+
+
+def summarize_cases_overlap(escalated_value, title):
+    # Filter escalated / non-escalated
+    filtered = df_apr_sep[
+        df_apr_sep['Escalated'].astype(str).str.strip().str.lower().eq('yes')
+        if escalated_value else
+        df_apr_sep['Escalated'].astype(str).str.strip().str.lower().ne('yes')
+    ]
+
+    results = []
+    for group_name, platforms in group_definitions.items():
+        count = filtered[filtered['Platform'].astype(str).str.upper().isin(platforms)].shape[0]
+        results.append({"Platform Group": group_name, "Case Count": count})
+
+    # Compute percentage of total (5241)
+    summary = pd.DataFrame(results)
+    summary["% of Total"] = (summary["Case Count"] / total_cases * 100).round(1).astype(str) + "%"
+
+    # Add total row
+    total_row = pd.DataFrame([{
+        "Platform Group": "Total",
+        "Case Count": summary["Case Count"].sum(),
+        "% of Total": f"{(summary['Case Count'].sum() / total_cases * 100):.1f}%"
+    }])
+    summary = pd.concat([summary, total_row], ignore_index=True)
+
+    print_table(summary, f"\n19. {title}", show_index=False, colalign=("left", "right", "right"))
+
+
+# Run both versions
+print(f"\nTotal cases from April 1 to September 30, 2025: {total_cases}")
+summarize_cases_overlap(escalated_value=False, title="NON-ESCALATED CASES (Apr 1 - Sep 30, 2025)")
+summarize_cases_overlap(escalated_value=True, title="ESCALATED CASES (Apr 1 - Sep 30, 2025)")
