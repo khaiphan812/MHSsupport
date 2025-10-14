@@ -606,7 +606,7 @@ if not escalated_resolved_cases.empty:
     )
 
     # Format as d hh:mm:ss
-    escalated_avg_by_platform["Avg Resolution (d hh:mm:ss)"] = (
+    escalated_avg_by_platform["Avg Resolution"] = (
         escalated_avg_by_platform["Average Resolution Time"].apply(format_timedelta)
     )
 
@@ -623,7 +623,7 @@ if not escalated_resolved_cases.empty:
 
     # Reorder columns: hh:mm:ss before days
     escalated_avg_by_platform = escalated_avg_by_platform[
-        ["Platform", "Avg Resolution (d hh:mm:ss)", "Avg Resolution Days"]
+        ["Platform", "Avg Resolution", "Avg Resolution Days"]
     ].reset_index(drop=True)
 
     # Make rank start from 1 instead of 0
@@ -646,9 +646,9 @@ df_apr_sep = df[(df['Entered Queue'] >= start_date) & (df['Entered Queue'] <= en
 
 # Define overlapping group membership
 group_definitions = {
-    'Portals - MAC+ / LMS / GIFR': ['MAC+', 'LMS', 'GIFR'],
+    'Portals - MAC+ / LMS / GIFR / USB / FAS': ['MAC+', 'LMS', 'GIFR', 'USB', 'FAS'],
     'Education - TAP': ['TAP'],
-    'Public Safety - GEARS / CORE PATHWAY': ['GEARS', 'CORE PATHWAY'],
+    'Public Safety - GEARS / CORE PATHWAY': ['GEARS', 'CORE SOLUTIONS'],
     'Gifted - MGI': ['MGI']
 }
 
@@ -687,3 +687,184 @@ def summarize_cases_overlap(escalated_value, title):
 print(f"\nTotal cases from April 1 to September 30, 2025: {total_cases}")
 summarize_cases_overlap(escalated_value=False, title="NON-ESCALATED CASES (Apr 1 - Sep 30, 2025)")
 summarize_cases_overlap(escalated_value=True, title="ESCALATED CASES (Apr 1 - Sep 30, 2025)")
+
+# ------------------------------------- EXPORT RESULTS TO EXCEL ---------------------------------------------
+output_path = "analysis_output.xlsx"
+
+
+def safe_sheet_name(name: str) -> str:
+    """Truncate/sanitize sheet names to be Excel-safe."""
+    name = re.sub(r'[\\/*?:\[\]]', '', name)
+    return name[:31]
+
+
+def concat_with_blank_rows(grouped_df):
+    """Combine grouped DataFrames with a blank row between groups, preserving column order."""
+    parts = []
+    # Keep column order from the first group
+    first_cols = None
+    for _, subdf in grouped_df:
+        if first_cols is None:
+            first_cols = list(subdf.columns)
+        subdf = subdf.reindex(columns=first_cols)
+        parts.append(subdf)
+        blank = pd.DataFrame([{col: "" for col in first_cols}])
+        parts.append(blank)
+    return pd.concat(parts, ignore_index=True)
+
+
+with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+
+    # 1. Case count by platform
+    platform_summary.to_excel(writer, sheet_name="1_Case_Count_by_PF", index=False)
+
+    # 2. Case count by platform (monthly) — separated by blank rows
+    monthly_sorted_parts = []
+
+    for month, subdf in monthly_platform_counts.groupby("Year-Month"):
+        # Sort descending by Case Count
+        subdf_sorted = subdf.sort_values("Case Count", ascending=False).reset_index(drop=True)
+
+        # Add total row
+        total_cases = subdf_sorted["Case Count"].sum()
+        pct_sum = pd.to_numeric(subdf_sorted["Percentage"].str.rstrip('%')).sum()
+        total_row = pd.DataFrame([{
+            "Year-Month": month,
+            "Platform": "Total",
+            "Case Count": total_cases,
+            "Percentage": f"{pct_sum:.1f}%"
+        }])
+
+        # Combine this month’s block and a blank row
+        month_block = pd.concat([subdf_sorted, total_row], ignore_index=True)
+        monthly_sorted_parts.append(month_block)
+        monthly_sorted_parts.append(pd.DataFrame([{col: "" for col in month_block.columns}]))
+
+    # Combine all months, preserving column order
+    monthly_concat = pd.concat(monthly_sorted_parts, ignore_index=True)[
+        ["Year-Month", "Platform", "Case Count", "Percentage"]
+    ]
+
+    monthly_concat.to_excel(writer, sheet_name=safe_sheet_name("2_Monthly_Platform_Cases"), index=False)
+
+    # 3. Top 5 subjects per platform
+    top5_concat = concat_with_blank_rows(top5_per_platform.groupby("Platform"))
+    top5_concat.to_excel(writer, sheet_name=safe_sheet_name("3_Top5_Subjects_by_PF"), index=False)
+
+    # 4. Top 10 customers per platform
+    top10_concat = concat_with_blank_rows(top10_per_platform.groupby("Platform"))
+    top10_concat.to_excel(writer, sheet_name=safe_sheet_name("4_Top10_Customers_by_PF"), index=False)
+
+    # 5. Case count by team member
+    cases_by_member_summary.to_excel(writer, sheet_name="5_Case_by_Member", index=False)
+
+    # 6. Platform & case count by member — separated by blank rows
+    member_concat = concat_with_blank_rows(member_platform_counts.groupby("Worked By"))
+    member_concat.to_excel(writer, sheet_name=safe_sheet_name("6_Platform_by_Member"), index=False)
+
+    # 7. Case count by priority
+    cases_by_priority_summary.to_excel(writer, sheet_name="7_Cases_by_Priority", index=False)
+
+    # 8. Top 5 subjects by priority — separated by blank rows
+    top5_priority_concat = concat_with_blank_rows(top5_subjects_per_priority.groupby("Priority"))
+    top5_priority_concat.to_excel(writer, sheet_name=safe_sheet_name("8_Top5_Subjects_by_Priority"), index=False)
+
+    # 9. Top 10 busiest days
+    top_days_df.to_excel(writer, sheet_name="9_Top10_Busiest_Days", index=False)
+
+    # 10. Average case count by weekday
+    avg_cases_summary.to_excel(writer, sheet_name="10_Avg_Cases_by_Weekday", index=False)
+
+    # 11. Case entered queue by hour
+    hourly_summary.to_excel(writer, sheet_name="11_Cases_by_Hour", index=False)
+
+    # 12. Average resolution time summary (text only)
+    avg_res_summary = pd.DataFrame({
+        "Priority": [
+            "Overall average (all cases)",
+            "Normal priority cases",
+            "High priority cases"
+        ],
+        "Average Resolution Time": [
+            format_timedelta(avg_resolved_time),
+            format_timedelta(avg_normal_priority),
+            format_timedelta(avg_high_priority)
+        ]
+    })
+    avg_res_summary.to_excel(writer, sheet_name="12_Avg_Resolution_Time", index=False)
+
+    # 13. Average resolution time by platform
+    avg_by_platform_with_days.to_excel(writer, sheet_name="13_Avg_Res_Time_by_PF", index=False)
+
+    # 14. Average resolution time by team member (formatted)
+    avg_by_member_export = avg_by_member_sorted.copy()
+    avg_by_member_export["Average Resolution"] = avg_by_member_export["Average Resolution Time"].apply(format_timedelta)
+    avg_by_member_export["Resolution Days"] = (
+        avg_by_member_export["Average Resolution Time"].dt.total_seconds() / 86400
+    ).round(1)
+    avg_by_member_export = avg_by_member_export.drop(columns=["Average Resolution Time"])
+    avg_by_member_export.to_excel(writer, sheet_name="14_Avg_Res_Time_by_Member", index=False)
+
+    # 15. Resolution time ranges
+    resolution_summary.to_excel(writer, sheet_name="15_Res_Time_Range", index=False)
+
+    # 16. Escalated subjects summary
+    subject_escalated_summary.to_excel(writer, sheet_name="16_Escalated_Subjects", index=False)
+
+    # 17. Escalated subjects by platform — separated by blank rows
+    esc_concat = concat_with_blank_rows(escalated_subject_platform_counts.groupby("Platform"))
+    esc_concat.to_excel(writer, sheet_name=safe_sheet_name("17_Escalated_Subjects_by_PF"), index=False)
+
+    # 18. Escalated average resolution time (if exists)
+    if 'escalated_avg_by_platform' in locals():
+        escalated_avg_by_platform.to_excel(writer, sheet_name="18_Escalated_Avg_Res_Time", index=False)
+
+    # 19. CASE COUNT BY PLATFORM GROUP (Apr 1 - Sep 30, 2025)
+    start_date = pd.Timestamp('2025-04-01')
+    end_date = pd.Timestamp('2025-09-30')
+    df_apr_sep = df[(df['Entered Queue'] >= start_date) & (df['Entered Queue'] <= end_date)].copy()
+
+    group_definitions = {
+        'Portals - MAC+ / LMS / GIFR / USB / FAS': ['MAC+', 'LMS', 'GIFR', 'USB', 'FAS'],
+        'Education - TAP': ['TAP'],
+        'Public Safety - GEARS / CORE PATHWAY': ['GEARS', 'CORE SOLUTIONS'],
+        'Gifted - MGI': ['MGI']
+    }
+
+    total_cases = df_apr_sep.shape[0]
+
+
+    def build_cases_overlap(escalated_value: bool, title: str):
+        """Return a DataFrame matching the printed Section 19 table."""
+        filtered = df_apr_sep[
+            df_apr_sep['Escalated'].astype(str).str.strip().str.lower().eq('yes')
+            if escalated_value else
+            df_apr_sep['Escalated'].astype(str).str.strip().str.lower().ne('yes')
+        ]
+
+        results = []
+        for group_name, platforms in group_definitions.items():
+            count = filtered[filtered['Platform'].astype(str).str.upper().isin(platforms)].shape[0]
+            results.append({"Platform Group": group_name, "Case Count": count})
+
+        summary = pd.DataFrame(results)
+        summary["% of Total"] = (summary["Case Count"] / total_cases * 100).round(1).astype(str) + "%"
+
+        total_row = pd.DataFrame([{
+            "Platform Group": "Total",
+            "Case Count": summary["Case Count"].sum(),
+            "% of Total": f"{(summary['Case Count'].sum() / total_cases * 100):.1f}%"
+        }])
+        summary = pd.concat([summary, total_row], ignore_index=True)
+        return summary
+
+
+    # Build both Section 19 tables
+    non_escalated_19 = build_cases_overlap(False, "NON-ESCALATED CASES (Apr 1 - Sep 30, 2025)")
+    escalated_19 = build_cases_overlap(True, "ESCALATED CASES (Apr 1 - Sep 30, 2025)")
+
+    # Export them
+    non_escalated_19.to_excel(writer, sheet_name=safe_sheet_name("19.1_L2_Cases_Apr-Sep2025"), index=False)
+    escalated_19.to_excel(writer, sheet_name=safe_sheet_name("19.2_L3_Cases_Apr-Sep2025"), index=False)
+
+print(f"\n✅ All tables exported successfully to {output_path}")
