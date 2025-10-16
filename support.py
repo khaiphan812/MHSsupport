@@ -825,9 +825,8 @@ with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
     df_apr_sep = df[(df['Entered Queue'] >= start_date) & (df['Entered Queue'] <= end_date)].copy()
 
     group_definitions = {
-        'Portals - MAC+ / LMS / GIFR / USB / FAS': ['MAC+', 'LMS', 'GIFR', 'USB', 'FAS'],
-        'Education - TAP': ['TAP'],
-        'Public Safety - GEARS / CORE PATHWAY': ['GEARS', 'CORE SOLUTIONS'],
+        'Portals - MAC+ / TAP / USB / FAS': ['MAC+', 'TAP', 'USB', 'FAS'],
+        'Public Safety - LMS / GIFR / GEARS / CORE PATHWAY': ['LMS', 'GIFR', 'GEARS', 'CORE SOLUTIONS'],
         'Gifted - MGI': ['MGI']
     }
 
