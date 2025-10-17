@@ -6,7 +6,7 @@ from tabulate import tabulate
 import numpy as np
 
 
-file_path = "L2 Platform Support Master Data_PST.xlsx"
+file_path = "L2 Platform Support Master Data.xlsx"
 
 df = pd.read_excel(file_path, sheet_name='Sheet1')
 
@@ -646,9 +646,8 @@ df_apr_sep = df[(df['Entered Queue'] >= start_date) & (df['Entered Queue'] <= en
 
 # Define overlapping group membership
 group_definitions = {
-    'Portals - MAC+ / LMS / GIFR / USB / FAS': ['MAC+', 'LMS', 'GIFR', 'USB', 'FAS'],
-    'Education - TAP': ['TAP'],
-    'Public Safety - GEARS / CORE PATHWAY': ['GEARS', 'CORE SOLUTIONS'],
+    'Portals - MAC+ / TAP / USB / FAS': ['MAC+', 'TAP', 'USB', 'FAS'],
+    'Public Safety - LMS / GIFR / GEARS / CORE PATHWAY': ['LMS', 'GIFR', 'GEARS', 'CORE SOLUTIONS'],
     'Gifted - MGI': ['MGI']
 }
 
@@ -668,7 +667,7 @@ def summarize_cases_overlap(escalated_value, title):
         count = filtered[filtered['Platform'].astype(str).str.upper().isin(platforms)].shape[0]
         results.append({"Platform Group": group_name, "Case Count": count})
 
-    # Compute percentage of total (5241)
+    # Compute percentage of total
     summary = pd.DataFrame(results)
     summary["% of Total"] = (summary["Case Count"] / total_cases * 100).round(1).astype(str) + "%"
 
