@@ -292,7 +292,6 @@ resolved_cases['Resolution Days'] = resolved_cases['Average Resolution Time'].ap
     lambda td: td.total_seconds() / 86400 if pd.notna(td) else None
 )
 
-
 # Round resolution time columns to full seconds
 resolved_cases['Average Resolution Time'] = resolved_cases['Average Resolution Time'].dt.round('1s')
 
@@ -430,7 +429,7 @@ def print_table(df, title, show_index=True, colalign=None):
 # ------------------------------------- PRINTING ---------------------------------------------
 
 
-# 1. Case count by platform
+# 1. Print Case count by platform
 print_table(
     platform_summary,
     "1. CASE COUNT BY PLATFORM",
@@ -438,6 +437,7 @@ print_table(
     colalign=("left", "right", "right")
 )
 
+# 2. Print Case count Monthly
 print("\n2. CASE COUNT BY PLATFORM (MONTHLY)")
 for month, table in monthly_platform_counts.groupby('Year-Month'):
     # Sort descending by Case Count (same as Section 1)
@@ -462,7 +462,7 @@ for month, table in monthly_platform_counts.groupby('Year-Month'):
         colalign=("left", "right", "right")
     )
 
-# 2. Top 5 Subjects per Platform
+# 3. Print Top 5 Subjects per Platform
 print("\n3. TOP 5 SUBJECTS BY PLATFORM")
 for platform, table in top5_per_platform.groupby('Platform'):
     print_table(
@@ -472,7 +472,7 @@ for platform, table in top5_per_platform.groupby('Platform'):
         colalign=("left", "left", "right", "right")
     )
 
-# 3. Top 10 Customers per Platform
+# 4. Print Top 10 Customers per Platform
 print("\n4. TOP 10 CUSTOMERS BY PLATFORM")
 for platform, table in top10_per_platform.groupby('Platform'):
     print_table(
@@ -483,7 +483,7 @@ for platform, table in top10_per_platform.groupby('Platform'):
     )
 
 
-# 4. Case Count by Team Member
+# 5. Print Case Count by Team Member
 print_table(
     cases_by_member_summary,
     "\n5. CASE COUNT BY TEAM MEMBER",
@@ -491,6 +491,7 @@ print_table(
     colalign=("left", "right", "right")
 )
 
+# 6. Print Platforms worked by Team Member
 print("\n6. PLATFORMS WORKED BY TEAM MEMBER")
 for member, table in member_platform_counts.groupby('Worked By'):
     total_cases = table["Case Count"].sum()
@@ -512,6 +513,8 @@ for member, table in member_platform_counts.groupby('Worked By'):
         colalign=("left", "right", "right")
     )
 
+
+# 7. Print Case Count by Priority
 print_table(
     cases_by_priority_summary,
     "\n7. CASE COUNT BY PRIORITY",
@@ -519,6 +522,7 @@ print_table(
     colalign=("left", "right", "right")
 )
 
+# 8. Print Top 5 Subjects by Priority
 print("\n8. TOP 5 SUBJECTS BY PRIORITY")
 for priority, table in top5_subjects_per_priority.groupby('Priority'):
     print_table(
@@ -528,8 +532,12 @@ for priority, table in top5_subjects_per_priority.groupby('Priority'):
         colalign=("left", "left", "right", "right")
     )
 
+
+# 9. Print Top 10 busiest days of the year
 print_table(top_days_df, "\n9. TOP 10 BUSIEST DAYS OF 2025")
 
+
+# 10. Print Average case count of each day in the week
 print_table(
     avg_cases_summary,
     "\n10. AVERAGE CASE COUNT BY WEEKDAY",
@@ -537,6 +545,7 @@ print_table(
     colalign=("left", "right", "right")
 )
 
+# 11. Print Case count by each hour of the day
 print_table(
     hourly_summary,
     "\n11. CASE ENTERED QUEUE BY HOUR (EST)",
@@ -544,11 +553,14 @@ print_table(
     colalign=("left", "right", "right")
 )
 
+# 12. Print Average resolution time by Priority
 print("\n12. AVERAGE RESOLUTION TIME BY PRIORITY")
 print("Overall average (all cases):", format_timedelta(avg_resolved_time))
 print("Normal priority cases:", format_timedelta(avg_normal_priority))
 print("High priority cases:", format_timedelta(avg_high_priority))
 
+
+# 13. Print Average resolution time by Platform
 print_table(
     avg_by_platform_with_days,
     "\n13. AVERAGE RESOLUTION TIME BY PLATFORM",
@@ -556,10 +568,13 @@ print_table(
     colalign=("left", "right", "right")
 )
 
+# 14. Print Average resolution time by Team Member
 print_table(avg_by_member_sorted.assign(
     **{'Average Resolution Time': avg_by_member_sorted['Average Resolution Time'].apply(format_timedelta)}),
     "\n14. AVERAGE RESOLUTION TIME BY TEAM MEMBER", show_index=False, colalign=("left", "right"))
 
+
+# 15. Print Resolution time by Range
 print_table(
     resolution_summary,
     "\n15. CASE COUNT BY RESOLUTION TIME RANGE",
@@ -567,6 +582,7 @@ print_table(
     colalign=("left", "right", "right")
 )
 
+# 16. Print Escalated Case Stats Overview
 print(f"\nESCALATED CASES:")
 print(f"Total escalated cases: {total_escalated_cases}")
 print(f"Escalated cases with a Subject: {escalated_with_subject_count}")
@@ -576,6 +592,8 @@ if avg_escalated_time is not None:
 
 print_table(subject_escalated_summary, "\n16. ESCALATED CASE COUNT BY SUBJECT", show_index=False)
 
+
+# 17. Print Escalated Case Count by Platform
 print("\n17. ESCALATED SUBJECTS BY PLATFORM")
 for platform, table in escalated_subject_platform_counts.groupby('Platform'):
     total_platform = table["Escalated Case Count"].sum()
@@ -596,7 +614,7 @@ for platform, table in escalated_subject_platform_counts.groupby('Platform'):
         show_index=False
     )
 
-# 17. AVERAGE RESOLUTION TIME FOR ESCALATED CASES BY PLATFORM
+# 18. Print Avg Resolution time for Escalated Case by Platform
 if not escalated_resolved_cases.empty:
     escalated_avg_by_platform = (
         escalated_resolved_cases
@@ -637,6 +655,7 @@ if not escalated_resolved_cases.empty:
     )
 
 
+# 6-month period data (special request)
 # 19. CASE COUNT BY PLATFORM GROUP (Apr 1 - Sep 30, 2025)
 start_date = pd.Timestamp('2025-04-01')
 end_date = pd.Timestamp('2025-09-30')
@@ -646,9 +665,11 @@ df_apr_sep = df[(df['Entered Queue'] >= start_date) & (df['Entered Queue'] <= en
 
 # Define overlapping group membership
 group_definitions = {
-    'Portals - MAC+ / TAP / USB / FAS': ['MAC+', 'TAP', 'USB', 'FAS'],
-    'Public Safety - LMS / GIFR / GEARS / CORE PATHWAY': ['LMS', 'GIFR', 'GEARS', 'CORE SOLUTIONS'],
-    'Gifted - MGI': ['MGI']
+    'MAC+': ['MAC+'], 'TAP': ['TAP'], 'MGI': ['MGI'], 'GIFR': ['GIFR'], 'USB': ['USB'],
+    'GEARS': ['GEARS'], 'LMS': ['LMS'], 'FAS': ['FAS'], 'CORE PATHWAY': ['CORE SOLUTIONS'],
+    'RLH Online': ['RLH ONLINE'], 'Online Storefront (Shopify)': ['ONLINE STOREFRONT (SHOPIFY)'],
+    'API Integration (Janus)': ['API INTEGRATION (JANUS)']
+
 }
 
 total_cases = df_apr_sep.shape[0]
@@ -824,9 +845,10 @@ with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
     df_apr_sep = df[(df['Entered Queue'] >= start_date) & (df['Entered Queue'] <= end_date)].copy()
 
     group_definitions = {
-        'Portals - MAC+ / TAP / USB / FAS': ['MAC+', 'TAP', 'USB', 'FAS'],
-        'Public Safety - LMS / GIFR / GEARS / CORE PATHWAY': ['LMS', 'GIFR', 'GEARS', 'CORE SOLUTIONS'],
-        'Gifted - MGI': ['MGI']
+        'MAC+': ['MAC+'], 'TAP': ['TAP'], 'MGI': ['MGI'], 'GIFR': ['GIFR'], 'USB': ['USB'],
+        'GEARS': ['GEARS'], 'LMS': ['LMS'], 'FAS': ['FAS'], 'CORE PATHWAY': ['CORE SOLUTIONS'],
+        'RLH Online': ['RLH ONLINE'], 'Online Storefront (Shopify)': ['ONLINE STOREFRONT (SHOPIFY)'],
+        'API Integration (Janus)': ['API INTEGRATION (JANUS)']
     }
 
     total_cases = df_apr_sep.shape[0]
