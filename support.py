@@ -669,7 +669,6 @@ group_definitions = {
     'GEARS': ['GEARS'], 'LMS': ['LMS'], 'FAS': ['FAS'], 'CORE PATHWAY': ['CORE SOLUTIONS'],
     'RLH Online': ['RLH ONLINE'], 'Online Storefront (Shopify)': ['ONLINE STOREFRONT (SHOPIFY)'],
     'API Integration (Janus)': ['API INTEGRATION (JANUS)']
-
 }
 
 total_cases = df_apr_sep.shape[0]
